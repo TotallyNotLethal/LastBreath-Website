@@ -5,41 +5,148 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LastBreath Plugin Wiki</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-[#0f0f0f] text-gray-100">
   <main class="max-w-6xl mx-auto px-6 py-12">
     <a href="/index.html#plugins" class="text-green-400 hover:text-green-300 text-sm">← Back to server page</a>
-    <h1 class="text-4xl md:text-5xl font-black mt-4">LastBreath Plugin <span class="text-red-500">Documentation</span></h1>
-    <p class="text-gray-400 mt-4 max-w-3xl">This is the custom core plugin for Last Breath. It drives the Nemesis progression system, asteroid events, world bosses, and all custom RPG-style content.</p>
+    <h1 class="text-4xl md:text-5xl font-black mt-4">LastBreath Plugin <span class="text-red-500">Overview</span></h1>
+    <p class="text-gray-400 mt-4 max-w-4xl">This page is the player-facing overview of what LastBreathHC adds to hardcore survival. It covers progression, events, teams, rewards, combat pressure, and quality-of-life systems. Admin-only tooling is intentionally left out.</p>
 
-    <section class="mt-10 grid md:grid-cols-2 gap-6">
-      <a href="/plugin/nemesis-system.html" class="rounded-xl border border-gray-700 p-6 hover:border-red-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">Nemesis System</h2>
-        <p class="text-gray-400 mt-2">Persistent enemies that grow stronger, gain traits, and hunt players after major encounters.</p>
-      </a>
-      <a href="/plugin/asteroids.html" class="rounded-xl border border-gray-700 p-6 hover:border-yellow-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">Asteroid Events</h2>
-        <p class="text-gray-400 mt-2">Timed celestial impacts with high-tier loot, hostile mobs, and respawn materials.</p>
-      </a>
-      <a href="/plugin/world-bosses.html" class="rounded-xl border border-gray-700 p-6 hover:border-purple-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">World Bosses</h2>
-        <p class="text-gray-400 mt-2">Open-world raid encounters with rotating abilities and unique drops.</p>
-      </a>
-      <a href="/plugin/custom-potions-enchants.html" class="rounded-xl border border-gray-700 p-6 hover:border-pink-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">Custom Potions & Enchants</h2>
-        <p class="text-gray-400 mt-2">New combat and utility effects balanced specifically for Hardcore progression.</p>
-      </a>
-      <a href="/plugin/custom-items.html" class="rounded-xl border border-gray-700 p-6 hover:border-blue-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">Custom Items</h2>
-        <p class="text-gray-400 mt-2">Artifact weapons, utility tools, and event items with lore and rarity tiers.</p>
-      </a>
-      <a href="/plugin/custom-crafting.html" class="rounded-xl border border-gray-700 p-6 hover:border-green-500/70 bg-white/5">
-        <h2 class="text-2xl font-bold">Custom Crafting Recipes</h2>
-        <p class="text-gray-400 mt-2">Recipe tree for progression, from survival essentials to endgame equipment.</p>
-      </a>
+    <section class="mt-8 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold">On this page</h2>
+      <div class="grid md:grid-cols-2 gap-2 mt-4 text-sm text-gray-300">
+        <a href="#nemesis" class="hover:text-red-400">1) Nemesis progression</a>
+        <a href="#world-bosses" class="hover:text-red-400">2) World bosses</a>
+        <a href="#asteroids" class="hover:text-red-400">3) Asteroid events</a>
+        <a href="#blood-moon" class="hover:text-red-400">4) Blood Moon</a>
+        <a href="#teams" class="hover:text-red-400">5) Teams, team chat, waypoints</a>
+        <a href="#cosmetics" class="hover:text-red-400">6) Cosmetics and titles</a>
+        <a href="#daily" class="hover:text-red-400">7) Daily rewards</a>
+        <a href="#potions" class="hover:text-red-400">8) Potions and custom effects</a>
+        <a href="#items" class="hover:text-red-400">9) Custom items and recipes</a>
+        <a href="#hardcore" class="hover:text-red-400">10) Hardcore death systems</a>
+        <a href="#combat" class="hover:text-red-400">11) Combat and mob pressure</a>
+        <a href="#environment" class="hover:text-red-400">12) Environmental hazards</a>
+        <a href="#social" class="hover:text-red-400">13) Social/UX systems</a>
+        <a href="#integrations" class="hover:text-red-400">14) Discord/API integrations</a>
+      </div>
+    </section>
+
+    <section id="nemesis" class="mt-10 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-red-400">1) Nemesis progression</h2>
+      <p class="text-gray-300 mt-2">The flagship loop. High-threat captains can emerge from normal hostile encounters and evolve over time.</p>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Captains scale in strength with tier and level growth.</li>
+        <li>Traits, personalities, and memory systems shape future encounters.</li>
+        <li>Reinforcement behavior, social links, and rivalry pressure create recurring conflicts.</li>
+        <li>Rewards and progression tracking make long-term hunting meaningful.</li>
+      </ul>
+      <a href="/plugin/nemesis-system.html" class="inline-block mt-4 text-red-300 hover:text-red-200">Open detailed Nemesis guide →</a>
+    </section>
+
+    <section id="world-bosses" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-purple-400">2) World bosses</h2>
+      <p class="text-gray-300 mt-2">Large-scale raid encounters with rotating mechanics, anti-cheese rules, and special reward bundles.</p>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Boss roster includes Gravewarden, StormHerald, HollowColossus, and AshenOracle.</li>
+        <li>Spawns can be timed or triggered by world conditions/events.</li>
+        <li>Drops can include materials, cosmetics, and title unlocks.</li>
+      </ul>
+      <a href="/plugin/world-bosses.html" class="inline-block mt-4 text-purple-300 hover:text-purple-200">Open world boss breakdown →</a>
+    </section>
+
+    <section id="asteroids" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-yellow-400">3) Asteroid events</h2>
+      <p class="text-gray-300 mt-2">Server events where impact zones spawn combat waves and tiered loot opportunities.</p>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Spawn windows and impact countdowns create contested objectives.</li>
+        <li>Higher tiers bring stronger hazards and better loot rolls.</li>
+        <li>Loot includes materials, custom item chances, and cosmetic outcomes.</li>
+      </ul>
+      <a href="/plugin/asteroids.html" class="inline-block mt-4 text-yellow-300 hover:text-yellow-200">Open asteroid event guide →</a>
+    </section>
+
+    <section id="blood-moon" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-rose-400">4) Blood Moon</h2>
+      <p class="text-gray-300 mt-2">A global pressure event that boosts danger and can interact with other systems like world-boss trigger paths.</p>
+    </section>
+
+    <section id="teams" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-blue-400">5) Teams, chat, ping, and waypoints</h2>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Team lifecycle: create, join, leave, kick, lock/unlock, and request flow.</li>
+        <li>Dedicated team chat with quick communication format.</li>
+        <li>Emergency team ping with cooldown protection.</li>
+        <li>Shared team waypoints for regrouping and map coordination.</li>
+      </ul>
+    </section>
+
+    <section id="cosmetics" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-pink-400">6) Cosmetics and titles</h2>
+      <p class="text-gray-300 mt-2">Visual progression with prefixes, kill-messages, auras, and title unlock/equip systems.</p>
+    </section>
+
+    <section id="daily" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-emerald-400">7) Daily rewards</h2>
+      <p class="text-gray-300 mt-2">Calendar and streak rewards with milestone bonuses and GUI claim flow.</p>
+    </section>
+
+    <section id="potions" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-cyan-400">8) Potions and custom effects</h2>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Custom potion definitions with branch-path progression.</li>
+        <li>Positive effects balanced by drawbacks/after-effects.</li>
+        <li>Custom effect IDs and status tracking support.</li>
+      </ul>
+      <a href="/plugin/custom-potions-enchants.html" class="inline-block mt-4 text-cyan-300 hover:text-cyan-200">Open potion/effect page →</a>
+    </section>
+
+    <section id="items" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-lime-400">9) Custom items and recipes</h2>
+      <p class="text-gray-300 mt-2">Progression items include artifacts and recovery tools (for example Rebirth Stone, Totem of Life, Gracestone, and Enhanced Grindstone).</p>
+      <p class="text-gray-400 mt-2">Recipe visuals are being prepared for this wiki and will be added in a later update with a Minecraft crafting-table style layout.</p>
+      <div class="mt-4 flex flex-wrap gap-3">
+        <a href="/plugin/custom-items.html" class="text-lime-300 hover:text-lime-200">View custom item details →</a>
+        <a href="/plugin/custom-crafting.html" class="text-lime-300 hover:text-lime-200">View recipe hub →</a>
+      </div>
+    </section>
+
+    <section id="hardcore" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-orange-400">10) Hardcore death systems</h2>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Revive-state handling and recovery loops.</li>
+        <li>Death markers and persistence windows.</li>
+        <li>Extra death-oriented consequences to preserve hardcore stakes.</li>
+      </ul>
+    </section>
+
+    <section id="combat" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-amber-400">11) Combat and mob pressure</h2>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Distance-based scaling to keep exploration dangerous.</li>
+        <li>Arrow aggro and mob behavior changes.</li>
+        <li>Additional combat interaction rules for survival pacing.</li>
+      </ul>
+    </section>
+
+    <section id="environment" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-sky-400">12) Environmental hazards</h2>
+      <p class="text-gray-300 mt-2">Biome-sensitive pressure profiles affect traversal and risk management (swamp, desert, mountain, and deep ocean conditions).</p>
+    </section>
+
+    <section id="social" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-violet-400">13) Social and UX systems</h2>
+      <ul class="list-disc ml-5 mt-3 text-gray-300 space-y-1">
+        <li>Inventory/EC chat sharing hooks.</li>
+        <li>Nickname support.</li>
+        <li>Tab menu overlays for live server/player info.</li>
+      </ul>
+    </section>
+
+    <section id="integrations" class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <h2 class="text-2xl font-bold text-teal-400">14) Integrations</h2>
+      <p class="text-gray-300 mt-2">LastBreathHC includes Discord webhook broadcasting and API-connected stat/event wiring for external service integration.</p>
     </section>
   </main>
-  <script>lucide.createIcons();</script>
 </body>
 </html>
