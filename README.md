@@ -109,31 +109,103 @@ Body examples:
 Copy/paste this prompt into Codex in your plugin repo:
 
 ```text
-I have a Minecraft plugin (Paper/Spigot). Add an async API client service that pushes events to my Last Breath API.
+I have a Minecraft plugin (Paper/Spigot) and need a production-ready API integration for my website backend.
 
-Base URL: https://lastbreath.net/api
-API key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
-Auth header: Authorization: Bearer <API_KEY>
-Fallback header also accepted: x-api-key
+Use these exact API details:
 
-- If your Java `HttpClient` logs `307 Redirecting...`, enable redirects (`followRedirects(HttpClient.Redirect.NORMAL)`) and verify your base URL is exactly `https://lastbreath.net/api`.
+- Production website: https://www.lastbreath.net
+- API base URL (preferred): https://www.lastbreath.net/api
+- API base URL (also valid): https://lastbreath.net/api
+- Unified plugin endpoint: POST /plugin/event
+- Full endpoint URL to call: https://www.lastbreath.net/api/plugin/event
+- API key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
 
-Implement these methods:
-- sendJoin(UUID uuid, String username) -> POST /plugin/event with {event:"join", uuid, username}
-- sendLeave(UUID uuid) -> POST /plugin/event with {event:"leave", uuid}
-- sendDeath(UUID uuid, String deathMessage) -> POST /plugin/event with {event:"death", uuid, death_message}
-- sendStats(UUID uuid, long survivalMinutes, int kills) -> POST /plugin/event with {event:"stats", uuid, survival_time, kills}
-- sendDragon(Optional<UUID> uuid) -> POST /plugin/event with {event:"dragon", uuid?}
+Authentication headers (send both on every request):
+- Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
+- x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
 
-Requirements:
-- Use asynchronous HTTP (non-blocking main server thread).
-- Retry with backoff (at least 3 attempts).
-- Log non-2xx responses with endpoint and body.
-- Add config values for baseUrl and apiKey in config.yml.
-- Add a scheduled task to send periodic stats updates for online players.
-- Hook PlayerJoinEvent, PlayerQuitEvent, PlayerDeathEvent, and EnderDragon death event.
-- Keep code organized with ApiClient class + EventListener class.
-- Include full compilable code and any needed Gradle/Maven dependency changes.
+Content-Type:
+- application/json
+
+Implement/verify these methods in the plugin:
+- sendJoin(UUID uuid, String username)
+- sendLeave(UUID uuid)
+- sendDeath(UUID uuid, String deathMessage)
+- sendStats(UUID uuid, long survivalMinutes, int kills)
+- sendDragon(Optional<UUID> uuid)
+
+Each method should POST to /plugin/event using these JSON payload shapes:
+
+1) Join event
+{
+  "event": "join",
+  "uuid": "<player-uuid>",
+  "username": "<player-name>"
+}
+
+2) Leave event
+{
+  "event": "leave",
+  "uuid": "<player-uuid>"
+}
+
+3) Death event
+{
+  "event": "death",
+  "uuid": "<player-uuid>",
+  "death_message": "<minecraft death message>"
+}
+
+4) Stats event
+{
+  "event": "stats",
+  "uuid": "<player-uuid>",
+  "survival_time": <minutes>,
+  "kills": <int>
+}
+
+5) Dragon event (with killer)
+{
+  "event": "dragon",
+  "uuid": "<killer-uuid>"
+}
+
+6) Dragon event (no killer)
+{
+  "event": "dragon"
+}
+
+Expected successful response:
+- HTTP 200
+- JSON like: {"success":true,"message":"<event> event processed"}
+
+Error behavior to handle:
+- 400 when required fields are missing
+- 401 when API key is missing/incorrect
+- 429 if rate limited
+- 5xx for server issues
+
+Implementation requirements:
+- Use Java HttpClient asynchronously (sendAsync) so Bukkit main thread is never blocked.
+- Add retries with exponential backoff (minimum 3 attempts).
+- Log request URL, event type, status code, and truncated response body for non-2xx.
+- Escape JSON string fields safely (username/death_message).
+- Add config values in config.yml:
+  - lastbreath.api.baseUrl: https://www.lastbreath.net
+  - lastbreath.api.apiKey: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
+- Normalize base URL so final request path is always /api/plugin/event.
+- Enable redirects in HttpClient (followRedirects NORMAL) in case of domain redirect.
+
+Wire event hooks:
+- PlayerJoinEvent -> sendJoin
+- PlayerQuitEvent -> sendLeave
+- PlayerDeathEvent -> sendDeath
+- EnderDragon death -> sendDragon(Optional killer UUID)
+- Scheduled repeating task (e.g., every 60s) to sendStats for online players
+
+Also add one startup self-test log message that prints the fully resolved URL being used for plugin events.
+
+Return complete compilable code for all changed classes and any dependency/config updates.
 ```
 
 ---
