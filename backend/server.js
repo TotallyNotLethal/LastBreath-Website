@@ -7,14 +7,14 @@ const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_KEY = process.env.API_KEY || 'dev_key';
+const API_KEY = 'LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME';
 
 // Security middleware
 app.use(helmet());
 app.use(cors({
   origin: '*', // Configure this for production: ['http://localhost', 'https://yourdomain.com']
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
 }));
 
 // Rate limiting
@@ -35,7 +35,12 @@ app.use(express.json());
 // Middleware to check API key for write operations
 const authenticateApiKey = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader || authHeader !== `Bearer ${API_KEY}`) {
+  const xApiKey = req.headers['x-api-key'];
+  const bearerToken = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length)
+    : null;
+
+  if (xApiKey !== API_KEY && bearerToken !== API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
@@ -91,11 +96,32 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+// Alias for clients that use /state or /states naming
+app.get(['/api/state', '/api/states'], async (req, res) => {
+  try {
+    const stats = await db.getServerStats();
+    res.json({
+      success: true,
+      data: {
+        total_players: stats.total_players || 0,
+        total_deaths: stats.total_deaths || 0,
+        online_players: stats.online_players || 0,
+        dragon_slayers: stats.dragon_slayers || 0,
+        server_uptime: stats.server_uptime || 0,
+        last_updated: stats.updated_at
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching state(s):', error);
+    res.status(500).json({ error: 'Failed to fetch state(s)' });
+  }
+});
+
 // Get player info
 app.get('/api/player/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    const player = await db.getPlayerByUUID(username); // Or search by username
+    const player = await db.getPlayerByUsername(username) || await db.getPlayerByUUID(username);
     
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
@@ -124,7 +150,7 @@ app.get('/api/search', async (req, res) => {
       data: players
     });
   } catch (error) {
-    res.status(500).api({ error: 'Search failed' });
+    res.status(500).json({ error: 'Search failed' });
   }
 });
 
@@ -139,8 +165,8 @@ app.post('/api/player/join', authenticateApiKey, async (req, res) => {
       return res.status(400).json({ error: 'UUID and username required' });
     }
 
-    // Create player if not exists
-    await db.createPlayer(uuid, username);
+    // Create player if not exists and keep username updated
+    await db.upsertPlayer(uuid, username);
     
     // Record login session
     await db.recordLogin(uuid);
@@ -153,6 +179,47 @@ app.post('/api/player/join', authenticateApiKey, async (req, res) => {
   } catch (error) {
     console.error('Error recording player join:', error);
     res.status(500).json({ error: 'Failed to record join' });
+  }
+});
+
+// Unified plugin endpoint to make Minecraft integration easier.
+// event can be: join, leave, death, dragon, stats
+app.post('/api/plugin/event', apiLimiter, authenticateApiKey, async (req, res) => {
+  try {
+    const { event, uuid, username, survival_time, kills, death_message } = req.body;
+
+    if (!event) {
+      return res.status(400).json({ error: 'event is required' });
+    }
+
+    if (event === 'join') {
+      if (!uuid || !username) return res.status(400).json({ error: 'uuid and username required for join' });
+      await db.upsertPlayer(uuid, username);
+      await db.recordLogin(uuid);
+    } else if (event === 'leave') {
+      if (!uuid) return res.status(400).json({ error: 'uuid required for leave' });
+      await db.recordLogout(uuid);
+    } else if (event === 'death') {
+      if (!uuid) return res.status(400).json({ error: 'uuid required for death' });
+      await db.recordDeath(uuid);
+      if (death_message) console.log(`[DEATH] ${death_message}`);
+    } else if (event === 'dragon') {
+      if (uuid) await db.recordDragonSlay(uuid);
+      else await db.incrementDragonSlayer();
+    } else if (event === 'stats') {
+      if (!uuid) return res.status(400).json({ error: 'uuid required for stats' });
+      await db.updatePlayerStats(uuid, survival_time || 0, kills || 0);
+    } else {
+      return res.status(400).json({
+        error: 'Invalid event value',
+        allowed: ['join', 'leave', 'death', 'dragon', 'stats']
+      });
+    }
+
+    return res.json({ success: true, message: `${event} event processed` });
+  } catch (error) {
+    console.error('Error processing /api/plugin/event:', error);
+    return res.status(500).json({ error: 'Failed to process plugin event' });
   }
 });
 
@@ -264,10 +331,13 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Last Breath API Server running on port ${PORT}`);
+  console.log(`🔐 Test API key: ${API_KEY}`);
   console.log(`📊 API Endpoints:`);
   console.log(`   GET  /api/leaderboard     - Get top players`);
   console.log(`   GET  /api/stats           - Get server statistics`);
+  console.log(`   GET  /api/state(s)        - Stats alias for plugin compatibility`);
   console.log(`   GET  /api/player/:name    - Get specific player`);
+  console.log(`   POST /api/plugin/event    - Unified plugin event endpoint (auth required)`);
   console.log(`   POST /api/player/join     - Record player login (auth required)`);
   console.log(`   POST /api/player/leave    - Record player logout (auth required)`);
   console.log(`   POST /api/player/death    - Record player death (auth required)`);

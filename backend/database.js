@@ -95,12 +95,41 @@ class Database {
     });
   }
 
+  getPlayerByUsername(username) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        "SELECT * FROM players WHERE LOWER(username) = LOWER(?)",
+        [username],
+        (err, row) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+  }
+
   createPlayer(uuid, username) {
     return new Promise((resolve, reject) => {
       const joinDate = new Date().toISOString().split('T')[0];
       this.db.run(
         `INSERT OR IGNORE INTO players (uuid, username, survival_time, join_date) 
          VALUES (?, ?, 0, ?)`,
+        [uuid, username, joinDate],
+        function(err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        }
+      );
+    });
+  }
+
+  upsertPlayer(uuid, username) {
+    return new Promise((resolve, reject) => {
+      const joinDate = new Date().toISOString().split('T')[0];
+      this.db.run(
+        `INSERT INTO players (uuid, username, join_date)
+         VALUES (?, ?, ?)
+         ON CONFLICT(uuid) DO UPDATE SET username = excluded.username`,
         [uuid, username, joinDate],
         function(err) {
           if (err) reject(err);
