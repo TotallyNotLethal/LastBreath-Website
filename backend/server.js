@@ -184,7 +184,7 @@ app.post('/api/player/join', authenticateApiKey, async (req, res) => {
 
 // Unified plugin endpoint to make Minecraft integration easier.
 // event can be: join, leave, death, dragon, stats
-app.post('/api/plugin/event', apiLimiter, authenticateApiKey, async (req, res) => {
+const handlePluginEvent = async (req, res) => {
   try {
     const { event, uuid, username, survival_time, kills, death_message } = req.body;
 
@@ -221,7 +221,10 @@ app.post('/api/plugin/event', apiLimiter, authenticateApiKey, async (req, res) =
     console.error('Error processing /api/plugin/event:', error);
     return res.status(500).json({ error: 'Failed to process plugin event' });
   }
-});
+};
+
+// Accept both with and without trailing slash to avoid redirects from strict proxies/CDNs.
+app.post(['/api/plugin/event', '/api/plugin/event/'], apiLimiter, authenticateApiKey, handlePluginEvent);
 
 // Player left
 app.post('/api/player/leave', authenticateApiKey, async (req, res) => {
