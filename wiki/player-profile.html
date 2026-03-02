@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Wiki Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/index.html#leaderboard" class="text-purple-400 hover:text-purple-300 text-sm">← Back to leaderboard</a>
+    <h1 class="text-4xl font-black mt-4">Player Wiki <span id="player-name" class="text-purple-400"></span></h1>
+    <p class="text-gray-400 mt-3">Generated from leaderboard selection. Share this link for player-specific wiki references.</p>
+
+    <section class="mt-8 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <div class="flex items-center gap-4">
+        <img id="player-avatar" src="https://mc-heads.net/avatar/Steve/128" alt="Player avatar" class="w-20 h-20 rounded-lg border border-purple-500/40">
+        <div>
+          <p id="player-status" class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-gray-800"></p>
+          <p class="text-gray-400 text-sm mt-2">This page updates from URL parameters so each leaderboard click can create a unique wiki page.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 text-sm">
+        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Rank</p><p id="player-rank" class="font-mono text-lg">-</p></div>
+        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Survival Days</p><p id="player-survival" class="font-mono text-lg text-green-400">0</p></div>
+        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Kills</p><p id="player-kills" class="font-mono text-lg">0</p></div>
+        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Join Date</p><p id="player-join-date" class="font-mono text-lg">-</p></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const playerName = params.get('username') || 'Unknown Survivor';
+    const status = params.get('status') || 'Unknown';
+
+    document.getElementById('player-name').textContent = playerName;
+    document.getElementById('player-rank').textContent = params.get('rank') ? `#${params.get('rank')}` : '-';
+    document.getElementById('player-survival').textContent = params.get('survival_days') || '0';
+    document.getElementById('player-kills').textContent = params.get('kills') || '0';
+    document.getElementById('player-join-date').textContent = params.get('join_date') || '-';
+
+    const statusEl = document.getElementById('player-status');
+    const alive = status.toLowerCase() === 'alive';
+    statusEl.textContent = status;
+    statusEl.className = `inline-flex px-3 py-1 rounded-full text-xs font-semibold ${alive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`;
+
+    const avatar = params.get('avatar');
+    if (avatar) {
+      document.getElementById('player-avatar').src = avatar;
+      document.getElementById('player-avatar').alt = `${playerName} avatar`;
+    }
+  </script>
+</body>
+</html>
