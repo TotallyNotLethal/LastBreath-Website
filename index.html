@@ -80,6 +80,11 @@
         .plugin-icon {
             transition: all 0.3s ease;
         }
+
+        .interactive-focus:focus-visible {
+            outline: 2px solid rgba(34, 197, 94, 0.8);
+            outline-offset: 2px;
+        }
     </style>
 </head>
 <body class="text-gray-100 overflow-x-hidden">
@@ -461,7 +466,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="getting-started" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                             <i data-lucide="tree-pine" class="w-6 h-6 text-green-500"></i>
@@ -477,9 +482,9 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
 
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="combat-guide" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-red-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                             <i data-lucide="sword" class="w-6 h-6 text-red-500"></i>
@@ -495,9 +500,9 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
 
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="end-portal-rush" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                             <i data-lucide="portal" class="w-6 h-6 text-purple-500"></i>
@@ -513,9 +518,9 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
 
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="base-building" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                             <i data-lucide="home" class="w-6 h-6 text-blue-500"></i>
@@ -531,16 +536,16 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
 
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="raid-survival" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                            <i data-lucide="flame" class="w-6 h-6 text-orange-500"></i>
+                            <i data-lucide="shield" class="w-6 h-6 text-orange-500"></i>
                         </div>
                         <div class="flex-1">
-                            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">Nether Survival</h3>
-                            <p class="text-gray-400 text-sm mb-3">Navigating the Nether safely. Bastion looting and fortress raiding without dying.</p>
+                            <h3 class="text-xl font-bold text-white mb-2 group-hover:text-orange-400 transition-colors">Raid Survival</h3>
+                            <p class="text-gray-400 text-sm mb-3">How to survive base raids, escape ambushes, and recover after major losses without dying.</p>
                             <div class="flex items-center space-x-2 text-xs text-gray-500">
                                 <span class="flex items-center"><i data-lucide="clock" class="w-3 h-3 mr-1"></i> 7 min read</span>
                                 <span>•</span>
@@ -549,9 +554,9 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
 
-                <div class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group">
+                <button type="button" data-wiki-article="health-management" class="glass-panel p-6 rounded-xl hover:bg-white/10 transition-all cursor-pointer group text-left interactive-focus">
                     <div class="flex items-start space-x-4">
                         <div class="w-12 h-12 rounded-lg bg-pink-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
                             <i data-lucide="heart" class="w-6 h-6 text-pink-500"></i>
@@ -567,16 +572,69 @@
                         </div>
                         <i data-lucide="arrow-right" class="w-5 h-5 text-gray-600 group-hover:text-white transition-colors"></i>
                     </div>
-                </div>
+                </button>
             </div>
 
             <div class="mt-8 text-center">
-                <button class="px-6 py-3 glass-panel rounded-lg border border-gray-700 hover:border-green-500/50 transition-all text-sm font-semibold">
+                <button id="open-wiki-library" type="button" class="px-6 py-3 glass-panel rounded-lg border border-gray-700 hover:border-green-500/50 transition-all text-sm font-semibold interactive-focus">
                     View Full Wiki (32 articles)
                 </button>
             </div>
         </div>
     </section>
+
+
+    <!-- Player Profile Modal -->
+    <div id="player-modal" class="fixed inset-0 z-[70] hidden">
+        <div id="player-modal-backdrop" class="absolute inset-0 bg-black/70"></div>
+        <div class="relative h-full overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+            <div class="w-full max-w-3xl glass-panel border border-gray-700 rounded-2xl mt-16">
+                <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                    <h3 id="player-modal-name" class="text-2xl font-bold text-white">Player Profile</h3>
+                    <button id="close-player-modal" class="text-gray-400 hover:text-white interactive-focus" aria-label="Close player profile">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-1">
+                        <img id="player-modal-avatar" src="" alt="Player avatar" class="w-24 h-24 rounded-xl border-2 border-green-500/40 mb-4">
+                        <p id="player-modal-status" class="inline-flex px-3 py-1 rounded-full text-xs font-semibold"></p>
+                        <p id="player-modal-online" class="text-sm text-gray-400 mt-3"></p>
+                    </div>
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Survival Time</p><p id="player-modal-survival" class="font-mono text-green-400 text-lg"></p></div>
+                            <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Total Kills</p><p id="player-modal-kills" class="font-mono text-lg"></p></div>
+                            <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Leaderboard Rank</p><p id="player-modal-rank" class="font-mono text-lg"></p></div>
+                            <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Joined</p><p id="player-modal-joined" class="font-mono text-lg"></p></div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm uppercase tracking-wider text-gray-400 mb-2">Achievements</h4>
+                            <div id="player-modal-achievements" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wiki Article Modal -->
+    <div id="wiki-modal" class="fixed inset-0 z-[70] hidden">
+        <div id="wiki-modal-backdrop" class="absolute inset-0 bg-black/70"></div>
+        <div class="relative h-full overflow-y-auto p-4 md:p-8 flex items-start justify-center">
+            <article class="w-full max-w-3xl glass-panel border border-gray-700 rounded-2xl mt-16">
+                <div class="p-6 border-b border-gray-800 flex items-center justify-between">
+                    <h3 id="wiki-modal-title" class="text-2xl font-bold text-white"></h3>
+                    <button id="close-wiki-modal" class="text-gray-400 hover:text-white interactive-focus" aria-label="Close wiki article">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-6">
+                    <p id="wiki-modal-content" class="text-gray-300 leading-relaxed whitespace-pre-line"></p>
+                </div>
+            </article>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="bg-black border-t border-gray-800 py-12">
@@ -634,13 +692,20 @@
     </footer>
 
     <script>
-        // API Configuration
-        const API_BASE_URL = 'http://localhost:3000/api'; // Change this to your backend URL
-        
-        // Initialize Lucide icons
+        const API_BASE_URL = 'http://localhost:3000/api';
+        const wikiArticles = {
+            'getting-started': { title: 'Getting Started', content: 'Spawn, secure wood + stone tools, and get food before nightfall.\n\nPrioritize a safe shelter, shield, and bed location. Avoid risky caves until armored.' },
+            'combat-guide': { title: 'Combat Guide', content: 'Hardcore rewards patience. Use terrain to your advantage, block with shields, and never overcommit.\n\nIn PvP, disengage early if you drop below half health.' },
+            'end-portal-rush': { title: 'End Portal Rush', content: 'Collect blaze rods and ender pearls with backup gear.\n\nScout strongholds with escape routes and always set a fallback base before entering the End.' },
+            'base-building': { title: 'Base Building', content: 'Hide your valuables behind layered defenses and decoy storage.\n\nUse multiple exits, hidden farms, and distributed loot stashes to survive raids.' },
+            'raid-survival': { title: 'Raid Survival', content: 'When raided, prioritize survival over loot. Evacuate critical gear and rotate to fallback locations.\n\nCounterattack only when intel and health are in your favor.' },
+            'health-management': { title: 'Health Management', content: 'Carry food, golden apples, and emergency blocks at all times.\n\nNever enter fights while hungry and always keep a retreat plan.' }
+        };
+
+        let currentPlayers = [];
+
         lucide.createIcons();
 
-        // Copy IP functionality
         function copyIP() {
             navigator.clipboard.writeText('play.lastbreath.mc');
             const tooltip = document.getElementById('copy-tooltip');
@@ -650,42 +715,72 @@
             }, 2000);
         }
 
-        // Navbar scroll effect
         const navbar = document.getElementById('navbar');
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                navbar.classList.add('bg-black/90');
-            } else {
-                navbar.classList.remove('bg-black/90');
-            }
+            navbar.classList.toggle('bg-black/90', window.scrollY > 50);
         });
 
-        // Mobile menu toggle
         const mobileMenuBtn = document.getElementById('mobile-menu-btn');
         const mobileMenu = document.getElementById('mobile-menu');
-        
-        mobileMenuBtn.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+        mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
 
-        // API Functions
+        const playerModal = document.getElementById('player-modal');
+        const wikiModal = document.getElementById('wiki-modal');
+
+        function setModalState(modal, isOpen) {
+            modal.classList.toggle('hidden', !isOpen);
+            document.body.classList.toggle('overflow-hidden', isOpen);
+        }
+
+        function getPlayerAchievements(player) {
+            const achievements = [];
+            if ((player.rank || 99) <= 3) achievements.push('Top 3 Survivor');
+            if ((player.kills || 0) >= 100) achievements.push('Century Slayer');
+            if ((player.survival_days || 0) >= 30) achievements.push('Month of Survival');
+            if (player.status === 'Alive') achievements.push('Still Breathing');
+            return achievements.length ? achievements : ['Rising Challenger'];
+        }
+
+        function openPlayerModal(player) {
+            document.getElementById('player-modal-name').textContent = player.username;
+            document.getElementById('player-modal-avatar').src = player.avatar;
+            document.getElementById('player-modal-avatar').alt = `${player.username} avatar`;
+            document.getElementById('player-modal-survival').textContent = `${player.survival_days || 0} days`;
+            document.getElementById('player-modal-kills').textContent = (player.kills || 0).toLocaleString();
+            document.getElementById('player-modal-rank').textContent = `#${player.rank || '-'}`;
+            document.getElementById('player-modal-joined').textContent = player.join_date || '2024';
+
+            const alive = player.status === 'Alive';
+            const statusEl = document.getElementById('player-modal-status');
+            statusEl.textContent = alive ? 'Alive' : 'Dead';
+            statusEl.className = `inline-flex px-3 py-1 rounded-full text-xs font-semibold ${alive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`;
+            document.getElementById('player-modal-online').textContent = `Online: ${alive ? 'Likely active' : 'Offline'}`;
+
+            document.getElementById('player-modal-achievements').innerHTML = getPlayerAchievements(player)
+                .map((achievement) => `<span class="px-2 py-1 rounded-full text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30">${achievement}</span>`)
+                .join('');
+
+            setModalState(playerModal, true);
+            lucide.createIcons();
+        }
+
+        function openWikiModal(articleKey) {
+            const article = wikiArticles[articleKey];
+            if (!article) return;
+            document.getElementById('wiki-modal-title').textContent = article.title;
+            document.getElementById('wiki-modal-content').textContent = article.content;
+            setModalState(wikiModal, true);
+            lucide.createIcons();
+        }
+
         async function fetchServerStats() {
             try {
                 const response = await fetch(`${API_BASE_URL}/stats`);
                 const result = await response.json();
-                if (result.success) {
-                    updateStats(result.data);
-                }
+                if (result.success) updateStats(result.data);
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
-                // Fallback to static if API is down
-                updateStats({
-                    total_players: 0,
-                    total_deaths: 0,
-                    dragon_slayers: 0,
-                    server_uptime: 99.9,
-                    online_players: 0
-                });
+                updateStats({ total_players: 0, total_deaths: 0, dragon_slayers: 0, server_uptime: 99.9, online_players: 0 });
             }
         }
 
@@ -693,63 +788,48 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/leaderboard?limit=10`);
                 const result = await response.json();
-                if (result.success) {
-                    renderLeaderboard(result.data);
-                }
+                if (result.success) renderLeaderboard(result.data);
             } catch (error) {
                 console.error('Failed to fetch leaderboard:', error);
                 document.getElementById('leaderboard-body').innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                            Failed to load leaderboard. API may be offline.
-                        </td>
-                    </tr>
+                    <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Failed to load leaderboard. API may be offline.</td></tr>
                 `;
             }
         }
 
         function updateStats(data) {
-            // Update online count in hero
             document.getElementById('online-count').textContent = data.online_players || 0;
-            
-            // Animate stat counters
             animateValue('stat-players', 0, data.total_players || 0, 2000);
             animateValue('stat-deaths', 0, data.total_deaths || 0, 2000);
             animateValue('stat-winners', 0, data.dragon_slayers || 0, 2000);
-            document.getElementById('stat-uptime').textContent = (data.server_uptime || 99.9) + '%';
+            document.getElementById('stat-uptime').textContent = `${data.server_uptime || 99.9}%`;
         }
 
         function renderLeaderboard(players) {
             const tbody = document.getElementById('leaderboard-body');
-            
-            if (!players || players.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                            No players found. Be the first to join!
-                        </td>
-                    </tr>
-                `;
+            currentPlayers = players || [];
+            if (!currentPlayers.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No players found. Be the first to join!</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = players.map((player, index) => {
+            tbody.innerHTML = currentPlayers.map((player, index) => {
                 const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'text-gray-500';
                 const rankIcon = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
                 const borderColor = index === 0 ? 'border-yellow-500' : index === 1 ? 'border-gray-400' : index === 2 ? 'border-orange-500' : player.is_alive ? 'border-green-500/30' : 'grayscale opacity-50';
                 const statusClass = player.status === 'Alive' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
-                
+
                 return `
                     <tr class="hover:bg-white/5 transition-colors">
                         <td class="px-6 py-4"><span class="${rankClass} text-2xl">${rankIcon} ${player.rank}</span></td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center space-x-3">
+                            <button type="button" class="leaderboard-player-btn interactive-focus flex items-center space-x-3 w-full text-left" data-player-index="${index}">
                                 <img src="${player.avatar}" alt="${player.username}" class="w-10 h-10 rounded-lg border-2 ${borderColor}">
                                 <div>
                                     <p class="font-bold ${player.is_alive ? 'text-white' : 'text-gray-400'}">${player.username}</p>
-                                    <p class="text-xs text-gray-500">Joined ${player.join_date || '2024'}</p>
+                                    <p class="text-xs text-gray-500">Joined ${player.join_date || '2024'} • Click for profile</p>
                                 </div>
-                            </div>
+                            </button>
                         </td>
                         <td class="px-6 py-4 font-mono ${player.is_alive ? 'text-green-400' : 'text-gray-500'}">${player.survival_days} days</td>
                         <td class="px-6 py-4 font-mono">${player.kills || 0}</td>
@@ -757,62 +837,71 @@
                     </tr>
                 `;
             }).join('');
-            
-            // Re-initialize Lucide icons for new elements
             lucide.createIcons();
         }
 
-        // Animated counter for stats
         function animateValue(id, start, end, duration) {
             const obj = document.getElementById(id);
             if (!obj) return;
-            
             const range = end - start;
             const minTimer = 50;
-            let stepTime = Math.abs(Math.floor(duration / range));
+            let stepTime = Math.abs(Math.floor(duration / Math.max(range, 1)));
             stepTime = Math.max(stepTime, minTimer);
-            let startTime = new Date().getTime();
-            let endTime = startTime + duration;
-            let timer;
-            
-            function run() {
-                let now = new Date().getTime();
-                let remaining = Math.max((endTime - now) / duration, 0);
-                let value = Math.round(end - (remaining * range));
+            const startTime = Date.now();
+            const endTime = startTime + duration;
+            const timer = setInterval(() => {
+                const now = Date.now();
+                const remaining = Math.max((endTime - now) / duration, 0);
+                const value = Math.round(end - remaining * range);
                 obj.innerHTML = value.toLocaleString();
-                if (value >= end || remaining <= 0) {
+                if (now >= endTime) {
                     clearInterval(timer);
                     obj.innerHTML = end.toLocaleString();
                 }
-            }
-            
-            timer = setInterval(run, stepTime);
-            run();
+            }, stepTime);
         }
 
-        // Initial data load
+        document.addEventListener('click', (event) => {
+            const playerBtn = event.target.closest('.leaderboard-player-btn');
+            if (playerBtn) {
+                const player = currentPlayers[Number(playerBtn.dataset.playerIndex)];
+                if (player) openPlayerModal(player);
+            }
+
+            const wikiBtn = event.target.closest('[data-wiki-article]');
+            if (wikiBtn) openWikiModal(wikiBtn.dataset.wikiArticle);
+
+            if (event.target.id === 'open-wiki-library') {
+                document.getElementById('wiki').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                openWikiModal('getting-started');
+            }
+
+            if (event.target.id === 'player-modal-backdrop' || event.target.closest('#close-player-modal')) setModalState(playerModal, false);
+            if (event.target.id === 'wiki-modal-backdrop' || event.target.closest('#close-wiki-modal')) setModalState(wikiModal, false);
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                setModalState(playerModal, false);
+                setModalState(wikiModal, false);
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             fetchServerStats();
             fetchLeaderboard();
-            
-            // Refresh data every 30 seconds
             setInterval(() => {
                 fetchServerStats();
                 fetchLeaderboard();
             }, 30000);
         });
 
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                    // Close mobile menu if open
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     mobileMenu.classList.add('hidden');
                 }
             });
