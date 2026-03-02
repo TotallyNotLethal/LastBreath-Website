@@ -116,6 +116,8 @@ API key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME
 Auth header: Authorization: Bearer <API_KEY>
 Fallback header also accepted: x-api-key
 
+- If your Java `HttpClient` logs `307 Redirecting...`, enable redirects (`followRedirects(HttpClient.Redirect.NORMAL)`) and verify your base URL is exactly `https://lastbreath.net/api`.
+
 Implement these methods:
 - sendJoin(UUID uuid, String username) -> POST /plugin/event with {event:"join", uuid, username}
 - sendLeave(UUID uuid) -> POST /plugin/event with {event:"leave", uuid}
