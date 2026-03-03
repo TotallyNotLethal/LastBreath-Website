@@ -1,1 +1,204 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Custom Potions & Enchants</title><script src='https://cdn.tailwindcss.com'></script></head><body class='bg-[#0f0f0f] text-gray-100'><main class='max-w-4xl mx-auto px-6 py-12'><a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a><h1 class='text-4xl font-black mt-4'>Custom Potions & Enchants</h1><p class='text-gray-300 mt-4'>The plugin adds curated effects for mobility, sustain, and anti-raid utility. Enchants are tuned to avoid one-shot metas while still feeling impactful in Hardcore.</p><ul class='mt-6 list-disc pl-6 text-gray-400 space-y-2'><li>Craftable and boss-drop potion lines</li><li>Progression-gated enchant tiers</li><li>Balance tuned for permadeath gameplay</li></ul></main></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Custom Potions & Effects</title>
+  <script src='https://cdn.tailwindcss.com'></script>
+</head>
+<body class='bg-[#0f0f0f] text-gray-100'>
+  <main class='max-w-7xl mx-auto px-6 py-12'>
+    <a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a>
+    <h1 class='text-4xl font-black mt-4'>Custom Potions & Effects</h1>
+    <p class='text-gray-300 mt-4'>Full potion/effect reference for the Last Breath plugin, including brewing method, ingredients, potion effect packages, drawbacks, and custom-effect behavior.</p>
+
+    <section class='mt-8 rounded-xl border border-cyan-800/70 bg-cyan-950/20 p-5'>
+      <h2 class='text-2xl font-bold text-cyan-300'>How Potions Are Made (Cauldron Brewing)</h2>
+      <ol class='list-decimal pl-6 mt-3 text-gray-200 space-y-1'>
+        <li>Place a cauldron and fill it with water.</li>
+        <li>Put the cauldron directly on top of a <strong>lit soulfire campfire</strong>.</li>
+        <li>Use water bottles or base potions as your brew base.</li>
+        <li>Add the potion's configured <code>craftingIngredient</code> to create that brew.</li>
+      </ol>
+      <ul class='list-disc pl-6 mt-4 text-gray-300 space-y-1'>
+        <li><code>allowFromAwkward: true</code> means the potion can be brewed from awkward potion routes.</li>
+        <li><code>allowFromAwkward: false</code> means it is progression/branch gated.</li>
+        <li><code>scaryToDrink: true</code> flags high-risk flavor/tier brews.</li>
+      </ul>
+    </section>
+
+    <section class='mt-8'>
+      <h2 class='text-2xl font-bold text-blue-300'>Potion Reference (Effects on Drink)</h2>
+      <p class='text-gray-400 mt-2'>Each entry shows how it is made plus vanilla and custom effect payloads.</p>
+      <div id='potions' class='grid lg:grid-cols-2 gap-4 mt-4'></div>
+    </section>
+
+    <section class='mt-10'>
+      <h2 class='text-2xl font-bold text-purple-300'>Custom Effect Reference (What each effect does)</h2>
+      <p class='text-gray-400 mt-2'>Descriptions are from the provided plugin effect definitions.</p>
+      <div id='effects' class='grid md:grid-cols-2 xl:grid-cols-3 gap-3 mt-4'></div>
+    </section>
+  </main>
+
+  <script>
+    const potions = [
+      {id:'clear_mind',name:'Potion of Clear Mind',ingredient:'AMETHYST_BLOCK',awk:true,scary:false,base:['NIGHT_VISION 3600t'],drawbacks:['WEAKNESS 400t'],custom:['clear_sight 3600t','quick_reflexes 3600t','hungry_mind 1200t'],branches:['copper_rush','echoed_veil','lucid_mind'],branchBrews:['crimson_guard','warped_focus']},
+      {id:'copper_rush',name:'Potion of Copper Rush',ingredient:'COPPER_INGOT',awk:true,scary:false,base:['HASTE 1200t'],drawbacks:['SLOWNESS 200t'],custom:['swift_miner 1200t','sturdy_tools 1200t','clumsy_hands 600t'],branches:['honeyed_guard','glow_warmth','tempered_rush'],branchBrews:['clear_mind','warped_focus']},
+      {id:'echoed_veil',name:'Potion of Echoed Veil',ingredient:'ECHO_SHARD',awk:true,scary:true,base:['INVISIBILITY 900t'],drawbacks:['MINING_FATIGUE 300t'],custom:['shadow_veil 900t','silent_steps 900t','noisy_presence 600t'],branches:['warped_focus','tidal_step','veiled_resonance'],branchBrews:['clear_mind']},
+      {id:'honeyed_guard',name:'Potion of Honeyed Guard',ingredient:'HONEYCOMB',awk:true,scary:false,base:['RESISTANCE 700t'],drawbacks:['SLOWNESS 400t'],custom:['steady_guard 700t','hardy_skin 700t','brittle_bones 400t'],branches:['crimson_guard','deep_breath','amber_bulwark'],branchBrews:['copper_rush']},
+      {id:'glow_warmth',name:'Potion of Glow Warmth',ingredient:'GLOW_BERRIES',awk:true,scary:false,base:['REGENERATION 300t'],drawbacks:['HUNGER 300t'],custom:['sun_blessed 600t','quick_heal 600t','cold_sweat 600t'],branches:['deep_breath','tidal_step','radiant_warmth'],branchBrews:['copper_rush']},
+      {id:'deep_breath',name:'Potion of Deep Breath',ingredient:'PRISMARINE_CRYSTALS',awk:true,scary:false,base:['WATER_BREATHING 2400t'],drawbacks:['WEAKNESS 400t'],custom:['water_affinity 2400t','deep_breathing 2400t','heavy_lungs 1200t'],branches:['tidal_step','forager_edge','abyssal_breath'],branchBrews:['honeyed_guard','glow_warmth']},
+      {id:'molten_clarity',name:'Potion of Molten Clarity',ingredient:'TINTED_GLASS',awk:true,scary:false,base:['WATER_BREATHING 1800t','FIRE_RESISTANCE 900t'],drawbacks:['WEAKNESS 300t'],custom:['thermal_vision 1800t','dousing_skin 900t','steam_blur 900t'],branches:['abyssal_breath','soulflame_guard'],branchBrews:['deep_breath']},
+      {id:'seekers_draft',name:"Potion of Seeker\'s Draft",ingredient:'RECOVERY_COMPASS',awk:true,scary:false,base:['NIGHT_VISION 1800t','HASTE 500t'],drawbacks:['HUNGER 500t'],custom:['clear_sight 1800t','stone_sense 1200t','ringing_head 900t'],branches:['lucid_mind','veiled_resonance'],branchBrews:['clear_mind']},
+      {id:'tidal_step',name:'Potion of Tidal Step',ingredient:'NAUTILUS_SHELL',awk:true,scary:false,base:['DOLPHINS_GRACE 1200t'],drawbacks:['SLOWNESS 200t'],custom:['windstep 1200t','root_grip 1200t','exp_drain 600t'],branches:['forager_edge','warped_focus','maelstrom_stride'],branchBrews:['echoed_veil','glow_warmth','deep_breath']},
+      {id:'forager_edge',name:"Potion of Forager\'s Edge",ingredient:'SWEET_BERRIES',awk:true,scary:false,base:['SPEED 900t'],drawbacks:['HUNGER 400t'],custom:['keen_harvest 900t','lucky_loot 900t','exp_drain 400t'],branches:['crimson_guard','warped_focus','harvester_edge'],branchBrews:['deep_breath','tidal_step']},
+      {id:'crimson_guard',name:'Potion of Crimson Guard',ingredient:'CRIMSON_FUNGUS',awk:true,scary:false,base:['FIRE_RESISTANCE 1200t'],drawbacks:['WEAKNESS 300t'],custom:['blaze_blood 1200t','ember_aura 1200t','burning_blood 600t'],branches:['warped_focus','clear_mind','soulflame_guard'],branchBrews:['honeyed_guard','forager_edge']},
+      {id:'warped_focus',name:'Potion of Warped Focus',ingredient:'WARPED_FUNGUS',awk:true,scary:false,base:['JUMP_BOOST 1200t'],drawbacks:['NAUSEA 200t'],custom:['night_echo 1200t','echo_step 1200t','shadow_curse 600t'],branches:['clear_mind','copper_rush','void_focus'],branchBrews:['echoed_veil','tidal_step','forager_edge','crimson_guard']},
+      {id:'lucid_mind',name:'Elixir of Lucid Mind',ingredient:'DIAMOND_BLOCK',awk:false,scary:false,base:['NIGHT_VISION 4800t','LUCK 800t'],drawbacks:['WEAKNESS 600t'],custom:['clear_sight 2400t','razor_thoughts 2400t','mind_fog 900t'],branches:['tempered_rush','veiled_resonance'],branchBrews:['clear_mind','soulflame_guard','void_focus']},
+      {id:'tempered_rush',name:'Potion of Tempered Rush',ingredient:'NETHERITE_INGOT',awk:false,scary:false,base:['HASTE II 1600t'],drawbacks:['SLOWNESS 300t'],custom:['overclocked_tools 1600t','clear_sight 1600t','strained_muscles 900t'],branches:['amber_bulwark','radiant_warmth'],branchBrews:['copper_rush','lucid_mind','void_focus']},
+      {id:'veiled_resonance',name:'Potion of Veiled Resonance',ingredient:'SCULK_CATALYST',awk:false,scary:true,base:['INVISIBILITY 1200t'],drawbacks:['MINING_FATIGUE 400t'],custom:['hush_aura 1200t','echo_sense 1200t','ringing_head 800t'],branches:['void_focus','maelstrom_stride'],branchBrews:['echoed_veil','seekers_draft','lucid_mind']},
+      {id:'amber_bulwark',name:'Potion of Amber Bulwark',ingredient:'HONEY_BLOCK',awk:false,scary:false,base:['RESISTANCE II 900t'],drawbacks:['SLOWNESS 500t'],custom:['sticky_shell 900t','rebound_guard 900t','sapped_steps 900t'],branches:['soulflame_guard','abyssal_breath'],branchBrews:['honeyed_guard','tempered_rush']},
+      {id:'radiant_warmth',name:'Potion of Radiant Warmth',ingredient:'GLOWSTONE',awk:false,scary:false,base:['REGENERATION II 400t'],drawbacks:['HUNGER 400t'],custom:['sunflare 800t','warm_resilience 800t','fevered_blood 800t'],branches:['abyssal_breath','maelstrom_stride'],branchBrews:['glow_warmth','tempered_rush']},
+      {id:'abyssal_breath',name:'Potion of Abyssal Breath',ingredient:'HEART_OF_THE_SEA',awk:false,scary:false,base:['WATER_BREATHING 3600t','DOLPHINS_GRACE 800t'],drawbacks:['WEAKNESS 500t'],custom:['abyssal_lungs 3600t','pressure_sense 2400t','undertow 1200t'],branches:['maelstrom_stride','harvester_edge'],branchBrews:['deep_breath','molten_clarity','amber_bulwark','radiant_warmth']},
+      {id:'maelstrom_stride',name:'Potion of Maelstrom Stride',ingredient:'SEA_LANTERN',awk:false,scary:false,base:['DOLPHINS_GRACE II 1600t'],drawbacks:['SLOWNESS 300t'],custom:['surge_stride 1600t','current_dancer 1600t','sea_sickness 900t'],branches:['harvester_edge','void_focus'],branchBrews:['tidal_step','veiled_resonance','radiant_warmth','abyssal_breath']},
+      {id:'harvester_edge',name:"Potion of Harvester\'s Edge",ingredient:'MOSS_BLOCK',awk:false,scary:false,base:['SPEED II 1200t'],drawbacks:['HUNGER 500t'],custom:['bounty_call 1200t','forest_stride 1200t','overgrowth 900t'],branches:['soulflame_guard','void_focus'],branchBrews:['forager_edge','abyssal_breath','maelstrom_stride']},
+      {id:'soulflame_guard',name:'Potion of Soulflame Guard',ingredient:'MAGMA_CREAM',awk:false,scary:false,base:['FIRE_RESISTANCE 1600t','RESISTANCE 500t'],drawbacks:['WEAKNESS 400t'],custom:['soulfire_blood 1600t','searing_aura 1600t','ashen_heart 1200t'],branches:['void_focus','lucid_mind'],branchBrews:['crimson_guard','molten_clarity','amber_bulwark','harvester_edge']},
+      {id:'void_focus',name:'Potion of Void Focus',ingredient:'ENDER_EYE',awk:false,scary:true,base:['JUMP_BOOST II 1600t'],drawbacks:['NAUSEA 300t'],custom:['rift_step 1600t','void_sight 1600t','reality_fray 1000t'],branches:['lucid_mind','tempered_rush'],branchBrews:['warped_focus','veiled_resonance','maelstrom_stride','harvester_edge','soulflame_guard']},
+      {id:'magma_treader',name:'Potion of Magma Treader',ingredient:'MAGMA_BLOCK',awk:true,scary:false,base:['FIRE_RESISTANCE 1200t','SPEED 600t'],drawbacks:['SLOWNESS 300t'],custom:['lava_walker 1200t','frost_resist 1200t','cursed_steps 700t'],branches:['soulflame_guard'],branchBrews:['crimson_guard','molten_clarity']},
+      {id:'spelunkers_grace',name:"Potion of Spelunker\'s Grace",ingredient:'GLOW_INK_SAC',awk:true,scary:false,base:['NIGHT_VISION 2200t','HASTE 900t'],drawbacks:['WEAKNESS 300t'],custom:['crystal_luck 1800t','extra_ore_chance 1200t','shaky_aim 800t'],branches:['seekers_draft'],branchBrews:['clear_mind','copper_rush']},
+      {id:'sentinels_heart',name:"Potion of Sentinel\'s Heart",ingredient:'SHIELD',awk:true,scary:false,base:['RESISTANCE 800t','ABSORPTION 400t'],drawbacks:['SLOWNESS 300t'],custom:['shielded_heart 1200t','steadfast 1200t','frail_skin 700t'],branches:['amber_bulwark'],branchBrews:['honeyed_guard']},
+      {id:'hunters_tempo',name:"Potion of Hunter\'s Tempo",ingredient:'TARGET',awk:true,scary:false,base:['SPEED 1200t','JUMP_BOOST 800t'],drawbacks:['HUNGER 500t'],custom:['hunter_focus 1200t','nimble_feet 1200t','restless_spirits 900t'],branches:['forager_edge'],branchBrews:['warped_focus','tidal_step']},
+      {id:'warden_tonic',name:"Potion of Warden\'s Tonic",ingredient:'MILK_BUCKET',awk:true,scary:false,base:['RESISTANCE 700t','REGENERATION 240t'],drawbacks:['HUNGER 600t'],custom:['poison_resist 1200t','iron_stomach 1200t','mana_leak 700t'],branches:['radiant_warmth'],branchBrews:['glow_warmth']},
+      {id:'stormcall_mix',name:'Potion of Stormcall Mix',ingredient:'LIGHTNING_ROD',awk:true,scary:false,base:['SPEED 1000t','RESISTANCE 500t'],drawbacks:['WEAKNESS 400t'],custom:['thunder_guard 1200t','quake_guard 1200t','gloom 800t'],branches:['soulflame_guard'],branchBrews:['honeyed_guard','crimson_guard']},
+      {id:'beastmasters_brew',name:"Potion of Beastmaster\'s Brew",ingredient:'BONE_BLOCK',awk:true,scary:false,base:['LUCK 1000t','SPEED 700t'],drawbacks:['HUNGER 500t'],custom:['beast_tamer 1200t','lucky_salvage 1200t','exp_drain 700t'],branches:['harvester_edge'],branchBrews:['forager_edge']}
+    ];
+
+    const effects = [
+      ['extra_ore_chance','Extra Ore Veins','POSITIVE','Occasionally doubles ore drops while mining.'],
+      ['hardy_skin','Hardy Skin','POSITIVE','Chance to reduce incoming damage by half a heart.'],
+      ['ember_aura','Ember Aura','POSITIVE','Nearby hostile mobs may catch fire.'],
+      ['swift_miner','Swift Miner','POSITIVE','Small chance to instantly break common stone blocks.'],
+      ['keen_harvest','Keen Harvest','POSITIVE','Crops have a chance to drop extra produce.'],
+      ['lucky_loot','Lucky Loot','POSITIVE','Increase odds of rare drops from mobs.'],
+      ['steady_guard','Steady Guard','POSITIVE','Occasionally blocks knockback.'],
+      ['frost_resist','Frost Resistance','POSITIVE','Reduce damage from powdered snow and freeze effects.'],
+      ['lava_walker','Lava Walker','POSITIVE','Briefly solidifies lava beneath you.'],
+      ['nimble_feet','Nimble Feet','POSITIVE','Short burst of speed after taking damage.'],
+      ['sturdy_tools','Sturdy Tools','POSITIVE','Tools sometimes take no durability damage.'],
+      ['hunter_focus','Hunter Focus','POSITIVE','Ranged attacks briefly slow targets.'],
+      ['clear_sight','Clear Sight','POSITIVE','Highlight nearby ores for a moment.'],
+      ['iron_stomach','Iron Stomach','POSITIVE','Negative food effects last shorter.'],
+      ['quick_reflexes','Quick Reflexes','POSITIVE','Small chance to dodge projectile damage.'],
+      ['silent_steps','Silent Steps','POSITIVE','Reduce vibration-based detection range.'],
+      ['steadfast','Steadfast','POSITIVE','Gain brief resistance when below half health.'],
+      ['night_echo','Night Echo','POSITIVE','Small buff at night to stealth and movement.'],
+      ['water_affinity','Water Affinity','POSITIVE','Swim faster and mine slightly quicker underwater.'],
+      ['blaze_blood','Blaze Blood','POSITIVE','Chance to ignite attackers.'],
+      ['shielded_heart','Shielded Heart','POSITIVE','Briefly reduces damage after blocking.'],
+      ['stone_sense','Stone Sense','POSITIVE','Occasionally reveals nearby caves.'],
+      ['beast_tamer','Beast Tamer','POSITIVE','Tamed mobs gain temporary health.'],
+      ['lucky_salvage','Lucky Salvage','POSITIVE','Chance to salvage extra materials from smelting.'],
+      ['thunder_guard','Thunder Guard','POSITIVE','Reduced lightning damage and stun.'],
+      ['root_grip','Root Grip','POSITIVE','Less knockback when standing on dirt or stone.'],
+      ['windstep','Windstep','POSITIVE','Occasional short leap while sprinting.'],
+      ['quick_heal','Quick Heal','POSITIVE','Healing sources are slightly more effective.'],
+      ['shadow_veil','Shadow Veil','POSITIVE','Dim light briefly hides you from mobs.'],
+      ['sun_blessed','Sun Blessed','POSITIVE','Daylight grants a mild regeneration pulse.'],
+      ['poison_resist','Poison Resistance','POSITIVE','Reduce poison duration.'],
+      ['quake_guard','Quake Guard','POSITIVE','Reduced fall damage from short drops.'],
+      ['echo_step','Echo Step','POSITIVE','Occasionally silence nearby footsteps.'],
+      ['crystal_luck','Crystal Luck','POSITIVE','Higher chance to find crystals while mining.'],
+      ['deep_breathing','Deep Breathing','POSITIVE','Extended underwater sprinting endurance.'],
+      ['thermal_vision','Thermal Vision','POSITIVE','Sharpens vision while submerged in water or lava.'],
+      ['dousing_skin','Dousing Skin','POSITIVE','Slightly reduces fire and lava damage.'],
+      ['razor_thoughts','Razor Thoughts','POSITIVE','Lucid Mind improves reaction time for brief bursts.'],
+      ['overclocked_tools','Overclocked Tools','POSITIVE','Tools feel lighter and break blocks faster.'],
+      ['hush_aura','Hush Aura','POSITIVE','Dampens movement sounds around you.'],
+      ['echo_sense','Echo Sense','POSITIVE','Sharpens detection of nearby motion.'],
+      ['sticky_shell','Sticky Shell','POSITIVE','Slight chance to cling and reduce knockback.'],
+      ['rebound_guard','Rebound Guard','POSITIVE','Occasionally rebounds melee attackers.'],
+      ['sunflare','Sunflare','POSITIVE','Brief glow that bolsters regeneration.'],
+      ['warm_resilience','Warm Resilience','POSITIVE','Softens incoming damage while warmed.'],
+      ['abyssal_lungs','Abyssal Lungs','POSITIVE','Deepens air reserves underwater.'],
+      ['pressure_sense','Pressure Sense','POSITIVE','Improves navigation in deep water.'],
+      ['surge_stride','Surge Stride','POSITIVE','Riding currents gives extra speed.'],
+      ['current_dancer','Current Dancer','POSITIVE','Smooth movement through water flows.'],
+      ['bounty_call','Bounty Call','POSITIVE','Increases odds of extra forage drops.'],
+      ['forest_stride','Forest Stride','POSITIVE','Moves faster through foliage.'],
+      ['soulfire_blood','Soulfire Blood','POSITIVE','Attacks may ignite with soulfire.'],
+      ['searing_aura','Searing Aura','POSITIVE','Heat radiates to nearby foes.'],
+      ['rift_step','Rift Step','POSITIVE','Short bursts of momentum when jumping.'],
+      ['void_sight','Void Sight','POSITIVE','Sharpens vision in dark places.'],
+      ['mind_fog','Mind Fog','NEGATIVE','Lucid Mind carries occasional confusion that dulls senses.'],
+      ['strained_muscles','Strained Muscles','NEGATIVE','Minor fatigue after bursts of speed.'],
+      ['ringing_head','Ringing Head','NEGATIVE','Headaches slow perception briefly.'],
+      ['sapped_steps','Sapped Steps','NEGATIVE','Movement feels heavier than normal.'],
+      ['fevered_blood','Fevered Blood','NEGATIVE','Overheating makes you feel weaker.'],
+      ['undertow','Undertow','NEGATIVE','Pulls you slightly downward in water.'],
+      ['sea_sickness','Sea Sickness','NEGATIVE','Nausea after quick swimming bursts.'],
+      ['steam_blur','Steam Blur','NEGATIVE','Heat and spray can briefly blur your focus.'],
+      ['overgrowth','Overgrowth','NEGATIVE','Thick foliage slows your pace.'],
+      ['ashen_heart','Ashen Heart','NEGATIVE','Heat drains stamina over time.'],
+      ['reality_fray','Reality Fray','NEGATIVE','Brief disorientation after rapid jumps.'],
+      ['restless_spirits','Restless Spirits','NEGATIVE','Hostile mobs spawn slightly more often nearby.'],
+      ['brittle_bones','Brittle Bones','NEGATIVE','Take extra damage from falls.'],
+      ['exp_drain','Experience Drain','NEGATIVE','Mobs drop less experience.'],
+      ['hungry_mind','Hungry Mind','NEGATIVE','Hunger drains faster.'],
+      ['clumsy_hands','Clumsy Hands','NEGATIVE','Mining speed occasionally slows.'],
+      ['cursed_steps','Cursed Steps','NEGATIVE','Intermittent slowness.'],
+      ['frail_skin','Frail Skin','NEGATIVE','Armor effectiveness reduced briefly.'],
+      ['noisy_presence','Noisy Presence','NEGATIVE','Mobs detect you from farther away.'],
+      ['cold_sweat','Cold Sweat','NEGATIVE','Fire resistance is less effective.'],
+      ['mana_leak','Mana Leak','NEGATIVE','Natural regeneration slows.'],
+      ['shadow_curse','Shadow Curse','NEGATIVE','Short bursts of darkness.'],
+      ['heavy_lungs','Heavy Lungs','NEGATIVE','Reduced swim speed.'],
+      ['burning_blood','Burning Blood','NEGATIVE','Chance to ignite when hit.'],
+      ['shaky_aim','Shaky Aim','NEGATIVE','Ranged accuracy slightly worse.'],
+      ['gloom','Gloom','NEGATIVE','Luck is reduced while active.']
+    ];
+
+    function badge(text, cls='bg-slate-800 text-slate-200') {
+      return `<span class="px-2 py-1 rounded text-xs ${cls}">${text}</span>`;
+    }
+
+    const potionsEl = document.getElementById('potions');
+    potions.forEach((p) => {
+      const card = document.createElement('article');
+      card.className = 'rounded-xl border border-gray-700 bg-white/5 p-4';
+      card.innerHTML = `
+        <h3 class="text-xl font-bold text-cyan-300">${p.name}</h3>
+        <p class="text-xs text-gray-400 mt-1"><code>${p.id}</code></p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          ${badge(`Ingredient: ${p.ingredient}`, 'bg-indigo-900/60 text-indigo-200')}
+          ${badge(`allowFromAwkward: ${p.awk}`)}
+          ${badge(`scaryToDrink: ${p.scary}`, p.scary ? 'bg-red-900/60 text-red-200' : 'bg-emerald-900/60 text-emerald-200')}
+        </div>
+        <div class="mt-3 text-sm text-gray-300">
+          <p><strong class="text-green-300">Base effects:</strong> ${p.base.join(', ')}</p>
+          <p class="mt-1"><strong class="text-red-300">Drawbacks:</strong> ${p.drawbacks.join(', ')}</p>
+          <p class="mt-1"><strong class="text-purple-300">Custom effects:</strong> ${p.custom.join(', ')}</p>
+          <p class="mt-1"><strong class="text-yellow-300">Branches:</strong> ${p.branches.join(', ')}</p>
+          <p class="mt-1"><strong class="text-yellow-300">Branch brews from:</strong> ${p.branchBrews.join(', ')}</p>
+        </div>
+      `;
+      potionsEl.appendChild(card);
+    });
+
+    const effectsEl = document.getElementById('effects');
+    effects.forEach(([id, name, category, description]) => {
+      const card = document.createElement('article');
+      const neg = category === 'NEGATIVE';
+      card.className = `rounded-lg border p-3 ${neg ? 'border-red-900 bg-red-950/20' : 'border-emerald-900 bg-emerald-950/20'}`;
+      card.innerHTML = `
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="font-semibold ${neg ? 'text-red-200' : 'text-emerald-200'}">${name}</h3>
+          ${badge(category, neg ? 'bg-red-900/70 text-red-200' : 'bg-emerald-900/70 text-emerald-200')}
+        </div>
+        <p class="text-xs text-gray-400 mt-1"><code>${id}</code></p>
+        <p class="text-sm text-gray-200 mt-2">${description}</p>
+      `;
+      effectsEl.appendChild(card);
+    });
+  </script>
+</body>
+</html>
