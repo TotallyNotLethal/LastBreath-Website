@@ -44,7 +44,7 @@ const apiLimiter = rateLimit({
   max: 30
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // Middleware to check API key for write operations
 const authenticateApiKey = (req, res, next) => {
@@ -65,7 +65,8 @@ const authenticateApiKey = (req, res, next) => {
 // Get leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const requestedLimit = String(req.query.limit || '250').toLowerCase();
+    const limit = requestedLimit === 'all' ? Number.MAX_SAFE_INTEGER : (parseInt(requestedLimit, 10) || 250);
     const requestedMetric = String(req.query.metric || 'playtime').toLowerCase();
     const metric = LEADERBOARD_METRICS.includes(requestedMetric) ? requestedMetric : 'playtime';
     const players = await db.getTopPlayers(limit, metric);
@@ -84,12 +85,29 @@ app.get('/api/leaderboard', async (req, res) => {
     res.json({
       success: true,
       data: rankedPlayers,
+      total_players: rankedPlayers.length,
       available_metrics: LEADERBOARD_METRICS,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching leaderboard:', error);
     res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// Return every known player so the frontend can always render full historical lists.
+app.get('/api/players', async (req, res) => {
+  try {
+    const players = await db.getAllPlayers();
+    res.json({
+      success: true,
+      total_players: players.length,
+      data: players,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error fetching all players:', error);
+    res.status(500).json({ error: 'Failed to fetch players' });
   }
 });
 
@@ -409,7 +427,7 @@ app.get('/api', (req, res) => {
     success: true,
     message: 'Last Breath API is online',
     endpoints: {
-      public: ['/api/leaderboard', '/api/stats', '/api/state', '/api/states', '/api/minecraft/status', '/api/player/:username', '/api/search', '/api/health'],
+      public: ['/api/leaderboard', '/api/players', '/api/stats', '/api/state', '/api/states', '/api/minecraft/status', '/api/player/:username', '/api/search', '/api/health'],
       plugin: ['/api/plugin/event', '/api/player/join', '/api/player/leave', '/api/player/death', '/api/player/stats', '/api/players/bulk', '/api/server/dragon']
     },
     timestamp: new Date().toISOString()
@@ -443,6 +461,10 @@ app.get('/api/minecraft/status', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'Payload too large' });
+  }
+
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
 });

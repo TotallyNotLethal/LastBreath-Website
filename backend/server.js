@@ -9,6 +9,7 @@ app.listen(PORT, () => {
   console.log('   GET  /api/stats           - Get server statistics');
   console.log('   GET  /api/state(s)        - Stats alias for plugin compatibility');
   console.log('   GET  /api/player/:name    - Get specific player');
+  console.log('   GET  /api/players         - Get all known players');
   console.log('   POST /api/plugin/event    - Unified plugin event endpoint (auth required)');
   console.log('   POST /api/player/join     - Record player login (auth required)');
   console.log('   POST /api/player/leave    - Record player logout (auth required)');

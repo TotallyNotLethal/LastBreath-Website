@@ -771,7 +771,7 @@
 
         async function fetchLeaderboard() {
             try {
-                const response = await fetch(`${API_BASE_URL}/leaderboard?limit=250&metric=${encodeURIComponent(activeMetric)}`);
+                const response = await fetch(`${API_BASE_URL}/leaderboard?limit=all&metric=${encodeURIComponent(activeMetric)}`);
                 const result = await parseApiResponse(response, 'Leaderboard');
                 if (result.success) renderLeaderboard(result.data);
             } catch (error) {

@@ -148,9 +148,11 @@ class Database {
     };
     const extractor = metricExtractors[metric] || metricExtractors.playtime;
 
+    const safeLimit = Number.isFinite(Number(limit)) ? Math.max(1, Number(limit)) : this.state.players.length;
+
     const rows = [...this.state.players]
       .sort((a, b) => (extractor(b) - extractor(a)) || (Number(b.time_alive_ticks || 0) - Number(a.time_alive_ticks || 0)))
-      .slice(0, limit)
+      .slice(0, safeLimit)
       .map((p) => ({
         uuid: p.uuid,
         username: p.username,
@@ -184,6 +186,18 @@ class Database {
         leaderboard_metric: metric,
         status: p.is_alive ? 'Alive' : 'Dead'
       }));
+
+    return Promise.resolve(rows);
+  }
+
+  getAllPlayers() {
+    const rows = [...this.state.players]
+      .sort((a, b) => {
+        const aTime = new Date(a.created_at || 0).getTime();
+        const bTime = new Date(b.created_at || 0).getTime();
+        return aTime - bTime;
+      })
+      .map((player) => this.normalizePlayer(player));
 
     return Promise.resolve(rows);
   }
