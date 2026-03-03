@@ -9,6 +9,7 @@ const { queryJavaServerStatus } = require('./minecraftQuery');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = 'LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME';
+const statsEventClients = new Set();
 const LEADERBOARD_METRICS = [
   'playtime',
   'mobs_killed',
@@ -45,6 +46,39 @@ const apiLimiter = rateLimit({
 });
 
 app.use(express.json({ limit: '5mb' }));
+
+const emitStatsEvent = async (reason = 'update') => {
+  if (!statsEventClients.size) return;
+
+  try {
+    const [stats, minecraft] = await Promise.all([
+      db.getServerStats(),
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
+    ]);
+
+    const payload = JSON.stringify({
+      reason,
+      timestamp: new Date().toISOString(),
+      data: {
+        total_players: stats.total_players || 0,
+        total_deaths: stats.total_deaths || 0,
+        online_players: minecraft.online ? minecraft.online_players : (stats.online_players || 0),
+        dragon_slayers: stats.dragon_slayers || 0,
+        server_uptime: stats.server_uptime || 0,
+        last_updated: stats.updated_at,
+        server_status: minecraft.online ? 'online' : 'offline',
+        players_online: minecraft.players_online || []
+      }
+    });
+
+    for (const client of statsEventClients) {
+      client.write(`event: stats\n`);
+      client.write(`data: ${payload}\n\n`);
+    }
+  } catch (error) {
+    console.error('Failed to emit stats event:', error);
+  }
+};
 
 // Middleware to check API key for write operations
 const authenticateApiKey = (req, res, next) => {
@@ -142,6 +176,27 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
+app.get('/api/stats/stream', async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  statsEventClients.add(res);
+  res.write(`event: connected\ndata: ${JSON.stringify({ timestamp: new Date().toISOString() })}\n\n`);
+  await emitStatsEvent('connected');
+
+  const keepAliveInterval = setInterval(() => {
+    res.write(`event: ping\ndata: ${Date.now()}\n\n`);
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(keepAliveInterval);
+    statsEventClients.delete(res);
+    res.end();
+  });
+});
+
 // Alias for clients that use /state or /states naming
 app.get(['/api/state', '/api/states'], async (req, res) => {
   try {
@@ -226,6 +281,7 @@ app.post('/api/player/join', authenticateApiKey, async (req, res) => {
     
     // Record login session
     await db.recordLogin(uuid);
+    await emitStatsEvent('join');
 
     res.json({ 
       success: true, 
@@ -284,6 +340,7 @@ const handlePluginEvent = async (req, res) => {
     } else if (event === 'bulk_stats') {
       if (!Array.isArray(players)) return res.status(400).json({ error: 'players[] required for bulk_stats' });
       const result = await db.upsertAllPlayerStats(players);
+      await emitStatsEvent('bulk_stats');
       if (result.failed > 0) {
         console.warn(`bulk_stats completed with partial failures: ${result.failed}/${players.length}`);
       }
@@ -294,6 +351,8 @@ const handlePluginEvent = async (req, res) => {
         allowed: ['join', 'leave', 'death', 'dragon', 'stats', 'bulk_stats']
       });
     }
+
+    await emitStatsEvent(event);
 
     return res.json({ success: true, message: `${event} event processed` });
   } catch (error) {
@@ -315,6 +374,7 @@ app.post('/api/player/leave', authenticateApiKey, async (req, res) => {
     }
 
     await db.recordLogout(uuid);
+    await emitStatsEvent('leave');
 
     res.json({ 
       success: true, 
@@ -336,6 +396,7 @@ app.post('/api/player/death', authenticateApiKey, async (req, res) => {
     }
 
     await db.recordDeath(uuid);
+    await emitStatsEvent('death');
 
     // Log death message if provided (could save to a deaths log table in future)
     if (death_message) {
@@ -363,6 +424,8 @@ app.post('/api/server/dragon', authenticateApiKey, async (req, res) => {
     } else {
       await db.incrementDragonSlayer();
     }
+
+    await emitStatsEvent('dragon');
 
     res.json({ 
       success: true, 
@@ -392,6 +455,8 @@ app.post('/api/player/stats', authenticateApiKey, async (req, res) => {
       ...fullStats
     });
 
+    await emitStatsEvent('stats');
+
     res.json({ 
       success: true, 
       message: 'Stats updated' 
@@ -410,6 +475,7 @@ app.post('/api/players/bulk', authenticateApiKey, async (req, res) => {
     }
 
     const result = await db.upsertAllPlayerStats(players);
+    await emitStatsEvent('bulk_stats');
     if (result.failed > 0) {
       console.warn(`bulk player sync completed with partial failures: ${result.failed}/${players.length}`);
     }
