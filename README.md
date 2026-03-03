@@ -36,11 +36,13 @@ npm run start
 
 API will run on `http://localhost:3000` locally. Production is hosted at `https://lastbreath.net`.
 
+> Vercel note: the API runs as serverless functions, not a persistent background process. SQLite is automatically stored in `/tmp/lastbreath.db` on Vercel so routes work, but `/tmp` is ephemeral. For durable production data, set `DB_PATH` to persistent storage or migrate to a managed DB.
+
 ---
 
 ## API Authentication (Plugin)
 
-For quick testing, the API key is currently hardcoded in `backend/server.js`:
+For quick testing, the API key is currently hardcoded in `backend/app.js`:
 
 - `LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME`
 
@@ -215,6 +217,54 @@ Return complete compilable code for all changed classes and any dependency/confi
 ```bash
 curl -X POST https://lastbreath.net/api/plugin/event \
   -H "Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
   -H "Content-Type: application/json" \
   -d '{"event":"join","uuid":"123e4567-e89b-12d3-a456-426614174000","username":"TestPlayer"}'
+```
+
+## Proper POST requests to send data
+
+Use `POST /api/plugin/event` with both auth headers:
+
+- `Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME`
+- `x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME`
+
+### Join
+
+```bash
+curl -X POST https://lastbreath.net/api/plugin/event \
+  -H "Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"join","uuid":"123e4567-e89b-12d3-a456-426614174000","username":"TestPlayer"}'
+```
+
+### Leave
+
+```bash
+curl -X POST https://lastbreath.net/api/plugin/event \
+  -H "Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"leave","uuid":"123e4567-e89b-12d3-a456-426614174000"}'
+```
+
+### Death
+
+```bash
+curl -X POST https://lastbreath.net/api/plugin/event \
+  -H "Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"death","uuid":"123e4567-e89b-12d3-a456-426614174000","death_message":"TestPlayer was blown up by Creeper"}'
+```
+
+### Stats
+
+```bash
+curl -X POST https://lastbreath.net/api/plugin/event \
+  -H "Authorization: Bearer LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "x-api-key: LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME" \
+  -H "Content-Type: application/json" \
+  -d '{"event":"stats","uuid":"123e4567-e89b-12d3-a456-426614174000","survival_time":3456,"kills":22}'
 ```
