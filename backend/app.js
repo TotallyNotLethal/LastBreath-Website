@@ -81,6 +81,26 @@ const emitStatsEvent = async (reason = 'update') => {
   }
 };
 
+const persistStatsWithFallback = async ({ uuid, username, survival_time, kills, fullStats = {} }) => {
+  try {
+    await db.upsertFullPlayerStats({
+      uuid,
+      username,
+      kills,
+      survival_time,
+      time_alive: fullStats.time_alive ?? fullStats.time_alive_ticks,
+      ...fullStats
+    });
+    return { mode: 'full' };
+  } catch (error) {
+    // Keep legacy stat updates working even if richer ingestion fails.
+    console.warn(`Full stats ingest failed for ${uuid}, using legacy fallback:`, error?.message || error);
+    await db.upsertPlayer(uuid, username || 'Unknown Player');
+    await db.updatePlayerStats(uuid, survival_time, kills);
+    return { mode: 'legacy_fallback' };
+  }
+};
+
 // Middleware to check API key for write operations
 const authenticateApiKey = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -330,14 +350,10 @@ const handlePluginEvent = async (req, res) => {
       else await db.incrementDragonSlayer();
     } else if (event === 'stats') {
       if (!uuid) return res.status(400).json({ error: 'uuid required for stats' });
-      await db.upsertFullPlayerStats({
-        uuid,
-        username,
-        time_alive: fullStats.time_alive ?? fullStats.time_alive_ticks,
-        kills,
-        survival_time,
-        ...fullStats
-      });
+      const ingest = await persistStatsWithFallback({ uuid, username, survival_time, kills, fullStats });
+      if (ingest.mode === 'legacy_fallback') {
+        console.warn(`Processed stats event with legacy fallback for uuid=${uuid}`);
+      }
     } else if (event === 'bulk_stats') {
       if (!Array.isArray(players)) return res.status(400).json({ error: 'players[] required for bulk_stats' });
       const result = await db.upsertAllPlayerStats(players);
@@ -447,20 +463,13 @@ app.post('/api/player/stats', authenticateApiKey, async (req, res) => {
       return res.status(400).json({ error: 'UUID required' });
     }
 
-    await db.upsertFullPlayerStats({
-      uuid,
-      username,
-      kills,
-      survival_time,
-      time_alive: fullStats.time_alive ?? fullStats.time_alive_ticks,
-      ...fullStats
-    });
+    const ingest = await persistStatsWithFallback({ uuid, username, survival_time, kills, fullStats });
 
     await emitStatsEvent('stats');
 
     res.json({ 
       success: true, 
-      message: 'Stats updated' 
+      message: ingest.mode === 'legacy_fallback' ? 'Stats updated (legacy fallback)' : 'Stats updated'
     });
   } catch (error) {
     console.error('Error updating stats:', error);
