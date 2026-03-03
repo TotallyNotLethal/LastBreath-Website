@@ -4,10 +4,24 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const db = require('./database');
+const { queryJavaServerStatus } = require('./minecraftQuery');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const API_KEY = 'LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME';
+const LEADERBOARD_METRICS = [
+  'playtime',
+  'mobs_killed',
+  'player_kills',
+  'deaths',
+  'revives',
+  'blocks_mined',
+  'blocks_placed',
+  'rare_ores_mined',
+  'crops_harvested',
+  'fish_caught',
+  'asteroids_looted'
+];
 
 // Security middleware
 app.use(helmet());
@@ -52,12 +66,15 @@ const authenticateApiKey = (req, res, next) => {
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
-    const players = await db.getTopPlayers(limit);
+    const requestedMetric = String(req.query.metric || 'playtime').toLowerCase();
+    const metric = LEADERBOARD_METRICS.includes(requestedMetric) ? requestedMetric : 'playtime';
+    const players = await db.getTopPlayers(limit, metric);
     
     // Add rank to each player
     const rankedPlayers = players.map((player, index) => ({
       rank: index + 1,
       ...player,
+      metric,
       // Convert survival time from minutes to days for display
       survival_days: Math.floor(player.survival_time / (24 * 60)),
       // Generate avatar URL if not set
@@ -67,6 +84,7 @@ app.get('/api/leaderboard', async (req, res) => {
     res.json({
       success: true,
       data: rankedPlayers,
+      available_metrics: LEADERBOARD_METRICS,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
@@ -78,16 +96,26 @@ app.get('/api/leaderboard', async (req, res) => {
 // Get server stats
 app.get('/api/stats', async (req, res) => {
   try {
-    const stats = await db.getServerStats();
+    const [stats, minecraft] = await Promise.all([
+      db.getServerStats(),
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
+    ]);
+
     res.json({
       success: true,
       data: {
         total_players: stats.total_players || 0,
         total_deaths: stats.total_deaths || 0,
-        online_players: stats.online_players || 0,
+        online_players: minecraft.online ? minecraft.online_players : (stats.online_players || 0),
         dragon_slayers: stats.dragon_slayers || 0,
         server_uptime: stats.server_uptime || 0,
-        last_updated: stats.updated_at
+        last_updated: stats.updated_at,
+        server_status: minecraft.online ? 'online' : 'offline',
+        players_online: minecraft.players_online || [],
+        minecraft_query: minecraft
+      },
+      source: {
+        online_players: minecraft.online ? 'minecraft_java_query' : 'session_tracking_fallback'
       }
     });
   } catch (error) {
@@ -99,16 +127,26 @@ app.get('/api/stats', async (req, res) => {
 // Alias for clients that use /state or /states naming
 app.get(['/api/state', '/api/states'], async (req, res) => {
   try {
-    const stats = await db.getServerStats();
+    const [stats, minecraft] = await Promise.all([
+      db.getServerStats(),
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
+    ]);
+
     res.json({
       success: true,
       data: {
         total_players: stats.total_players || 0,
         total_deaths: stats.total_deaths || 0,
-        online_players: stats.online_players || 0,
+        online_players: minecraft.online ? minecraft.online_players : (stats.online_players || 0),
         dragon_slayers: stats.dragon_slayers || 0,
         server_uptime: stats.server_uptime || 0,
-        last_updated: stats.updated_at
+        last_updated: stats.updated_at,
+        server_status: minecraft.online ? 'online' : 'offline',
+        players_online: minecraft.players_online || [],
+        minecraft_query: minecraft
+      },
+      source: {
+        online_players: minecraft.online ? 'minecraft_java_query' : 'session_tracking_fallback'
       }
     });
   } catch (error) {
@@ -186,7 +224,16 @@ app.post('/api/player/join', authenticateApiKey, async (req, res) => {
 // event can be: join, leave, death, dragon, stats
 const handlePluginEvent = async (req, res) => {
   try {
-    const { event, uuid, username, survival_time, kills, death_message } = req.body;
+    const {
+      event,
+      uuid,
+      username,
+      survival_time,
+      kills,
+      death_message,
+      players,
+      ...fullStats
+    } = req.body;
 
     if (!event) {
       return res.status(400).json({ error: 'event is required' });
@@ -208,11 +255,22 @@ const handlePluginEvent = async (req, res) => {
       else await db.incrementDragonSlayer();
     } else if (event === 'stats') {
       if (!uuid) return res.status(400).json({ error: 'uuid required for stats' });
-      await db.updatePlayerStats(uuid, survival_time || 0, kills || 0);
+      await db.upsertFullPlayerStats({
+        uuid,
+        username,
+        time_alive: fullStats.time_alive ?? fullStats.time_alive_ticks,
+        kills,
+        survival_time,
+        ...fullStats
+      });
+    } else if (event === 'bulk_stats') {
+      if (!Array.isArray(players)) return res.status(400).json({ error: 'players[] required for bulk_stats' });
+      const updated = await db.upsertAllPlayerStats(players);
+      return res.json({ success: true, message: 'bulk_stats event processed', updated });
     } else {
       return res.status(400).json({
         error: 'Invalid event value',
-        allowed: ['join', 'leave', 'death', 'dragon', 'stats']
+        allowed: ['join', 'leave', 'death', 'dragon', 'stats', 'bulk_stats']
       });
     }
 
@@ -298,13 +356,20 @@ app.post('/api/server/dragon', authenticateApiKey, async (req, res) => {
 // Update player stats (for periodic updates while playing)
 app.post('/api/player/stats', authenticateApiKey, async (req, res) => {
   try {
-    const { uuid, survival_time, kills } = req.body;
+    const { uuid, username, survival_time, kills, ...fullStats } = req.body;
     
     if (!uuid) {
       return res.status(400).json({ error: 'UUID required' });
     }
 
-    await db.updatePlayerStats(uuid, survival_time, kills);
+    await db.upsertFullPlayerStats({
+      uuid,
+      username,
+      kills,
+      survival_time,
+      time_alive: fullStats.time_alive ?? fullStats.time_alive_ticks,
+      ...fullStats
+    });
 
     res.json({ 
       success: true, 
@@ -316,6 +381,21 @@ app.post('/api/player/stats', authenticateApiKey, async (req, res) => {
   }
 });
 
+app.post('/api/players/bulk', authenticateApiKey, async (req, res) => {
+  try {
+    const { players } = req.body;
+    if (!Array.isArray(players)) {
+      return res.status(400).json({ error: 'players[] is required' });
+    }
+
+    const updated = await db.upsertAllPlayerStats(players);
+    return res.json({ success: true, updated });
+  } catch (error) {
+    console.error('Error bulk syncing players:', error);
+    return res.status(500).json({ error: 'Failed to bulk sync players' });
+  }
+});
+
 
 // API index route
 app.get('/api', (req, res) => {
@@ -323,8 +403,8 @@ app.get('/api', (req, res) => {
     success: true,
     message: 'Last Breath API is online',
     endpoints: {
-      public: ['/api/leaderboard', '/api/stats', '/api/state', '/api/states', '/api/player/:username', '/api/search', '/api/health'],
-      plugin: ['/api/plugin/event', '/api/player/join', '/api/player/leave', '/api/player/death', '/api/player/stats', '/api/server/dragon']
+      public: ['/api/leaderboard', '/api/stats', '/api/state', '/api/states', '/api/minecraft/status', '/api/player/:username', '/api/search', '/api/health'],
+      plugin: ['/api/plugin/event', '/api/player/join', '/api/player/leave', '/api/player/death', '/api/player/stats', '/api/players/bulk', '/api/server/dragon']
     },
     timestamp: new Date().toISOString()
   });
@@ -337,6 +417,22 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     server: 'Last Breath API'
   });
+});
+
+app.get('/api/minecraft/status', async (req, res) => {
+  try {
+    const host = String(req.query.host || 'mc.lastbreath.net');
+    const port = Number(req.query.port || 25565);
+    const minecraft = await queryJavaServerStatus(host, port);
+
+    return res.json({
+      success: minecraft.online,
+      data: minecraft
+    });
+  } catch (error) {
+    console.error('Error fetching Minecraft status:', error);
+    return res.status(500).json({ error: 'Failed to fetch Minecraft status' });
+  }
 });
 
 // Error handling middleware
