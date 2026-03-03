@@ -1,1 +1,419 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>World Bosses</title><script src='https://cdn.tailwindcss.com'></script></head><body class='bg-[#0f0f0f] text-gray-100'><main class='max-w-4xl mx-auto px-6 py-12'><a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a><h1 class='text-4xl font-black mt-4'>World Bosses</h1><p class='text-gray-300 mt-4'>Bosses spawn with rotating ability kits and phase transitions. Parties that coordinate interrupts, positioning, and consumables can secure legendary drops and progression tokens.</p><ul class='mt-6 list-disc pl-6 text-gray-400 space-y-2'><li>Scheduled and trigger-based bosses</li><li>Phase-based mechanics</li><li>Shared loot + contribution rewards</li></ul></main></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>World Bosses</title>
+  <script src='https://cdn.tailwindcss.com'></script>
+</head>
+<body class='bg-[#0f0f0f] text-gray-100'>
+  <main class='max-w-5xl mx-auto px-6 py-12'>
+    <a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a>
+
+    <h1 class='text-4xl font-black mt-4'>World Bosses</h1>
+    <p class='text-gray-300 mt-4 max-w-3xl'>
+      World Bosses are large-scale open-world encounters built around role pressure, arena awareness, and phase execution.
+      Every boss has unique mechanics and subcategories so squads can learn each fight step by step.
+    </p>
+
+    <section class='mt-8 grid gap-4 sm:grid-cols-2'>
+      <div class='rounded-xl border border-gray-800 bg-[#151515] p-4'>
+        <h2 class='text-lg font-bold text-white'>Global System</h2>
+        <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+          <li>Scheduled and trigger-based boss appearances</li>
+          <li>Phase-based mechanics with escalating difficulty</li>
+          <li>Shared loot + contribution reward distribution</li>
+        </ul>
+      </div>
+      <div class='rounded-xl border border-gray-800 bg-[#151515] p-4'>
+        <h2 class='text-lg font-bold text-white'>Boss Index (4 of 4)</h2>
+        <ul class='mt-3 text-gray-400 space-y-1'>
+          <li><span class='text-orange-300 font-semibold'>#1 Ashen Oracle</span> <span class='text-gray-500'>(detailed below)</span></li>
+          <li><span class='text-purple-300 font-semibold'>#2 Gravewarden</span> <span class='text-gray-500'>(detailed below)</span></li>
+          <li><span class='text-cyan-300 font-semibold'>#3 Hollow Colossus</span> <span class='text-gray-500'>(detailed below)</span></li>
+          <li><span class='text-sky-300 font-semibold'>#4 Storm Herald</span> <span class='text-gray-500'>(detailed below)</span></li>
+        </ul>
+      </div>
+    </section>
+
+
+    <section class='mt-10 rounded-xl border border-gray-800 bg-[#151515] p-6'>
+      <h2 class='text-2xl font-black text-white'>World Boss System: Anti-Cheese Controls</h2>
+      <p class='text-gray-300 mt-3'>
+        Anti-cheese logic continuously monitors boss engagements to prevent pillar abuse, long-range kiting, and arena resets.
+        It can cancel invalid hits, teleport bosses back into combat range, and clean up stale fights after inactivity.
+      </p>
+
+      <div class='mt-5 grid gap-4 md:grid-cols-2'>
+        <article class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+          <h3 class='font-bold text-sky-200'>Enforcement Rules</h3>
+          <ul class='mt-2 list-disc pl-5 text-sm text-gray-400 space-y-1'>
+            <li>Rejects damage when attacker exceeds <code>maxPlayerDistance</code> from boss.</li>
+            <li>Rejects damage when attacker vertical advantage exceeds <code>maxPillarHeight</code>.</li>
+            <li>Tracks repeated projectile pressure and teleports boss after <code>maxRangedHits</code>.</li>
+            <li>Teleports boss to nearest valid player when distance exceeds <code>teleportDistance</code>.</li>
+          </ul>
+        </article>
+
+        <article class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+          <h3 class='font-bold text-sky-200'>Arena/Lifecycle Guards</h3>
+          <ul class='mt-2 list-disc pl-5 text-sm text-gray-400 space-y-1'>
+            <li>Searches for active players inside <code>arenaRadius</code>.</li>
+            <li>If arena is empty, boss controller triggers <code>onArenaEmpty()</code> recovery.</li>
+            <li>If no damage occurs for <code>despawnAfterMinutes</code>, boss is removed and cleanup runs.</li>
+            <li>Per-boss state tracks last damage time, last player seen time, and ranged hit streaks.</li>
+          </ul>
+        </article>
+      </div>
+
+      <p class='text-xs text-gray-500 mt-4'>
+        Config root: <code>worldBoss.antiCheese</code> (keys: <code>maxPlayerDistance</code>, <code>maxPillarHeight</code>,
+        <code>maxRangedHits</code>, <code>arenaRadius</code>, <code>teleportDistance</code>, <code>despawnAfterMinutes</code>).
+      </p>
+    </section>
+
+
+    <section class='mt-12'>
+      <h2 class='text-3xl font-black text-orange-300'>Boss #1 — Ashen Oracle</h2>
+      <p class='text-gray-300 mt-3'>
+        A control-heavy caster boss that starts invulnerable behind relic anchors, then transitions into zone denial and burst punishment.
+        Designed to force coordinated relic clearing and disciplined positioning around safe space windows.
+      </p>
+
+      <div class='mt-6 grid gap-4 md:grid-cols-2'>
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Encounter Identity</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><strong class='text-gray-200'>Type:</strong> WorldBossType.ASHEN_ORACLE</li>
+            <li><strong class='text-gray-200'>Core theme:</strong> Prophecy, ash, and ritual shielding</li>
+            <li><strong class='text-gray-200'>Mechanic block:</strong> Crying Obsidian relics</li>
+            <li><strong class='text-gray-200'>Fight style:</strong> Protection phase → attrition phase → enrage burst phase</li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Phase Timeline</h3>
+          <ol class='mt-3 list-decimal pl-5 text-gray-400 space-y-2'>
+            <li>
+              <strong class='text-gray-200'>Ritual Phase</strong>
+              <p>Boss is invulnerable while relics are active. Players must break relics to unlock damage.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Prophecy Phase</strong>
+              <p>Boss becomes vulnerable and cycles Omen attacks while maintaining a safe-radius gameplay check.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Cataclysm Phase</strong>
+              <p>Triggers at configured health threshold. Omen cadence hardens and Ash Burst is added for knockback + burn pressure.</p>
+            </li>
+          </ol>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5 md:col-span-2'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Ability Kit</h3>
+          <div class='mt-3 grid gap-3 md:grid-cols-2'>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-orange-200'>Ritual Relics</h4>
+              <p class='text-sm text-gray-400 mt-1'>Relics spawn in a ring around the boss, clamped to world border bounds. While any remain, boss damage is negated.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-orange-200'>Omen</h4>
+              <p class='text-sm text-gray-400 mt-1'>Area punishment outside the safe radius. Applies damage, blindness, and slowness; stronger during Cataclysm.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-orange-200'>Ash Burst</h4>
+              <p class='text-sm text-gray-400 mt-1'>Cataclysm-only blast that knocks players back, sets them on fire, and deals burst damage in radius.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-orange-200'>Telegraph Layer</h4>
+              <p class='text-sm text-gray-400 mt-1'>Distinct sound + particle telegraphs for Omen and Ash Burst reward players who react before impact.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Configurable Values</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><code>omenSafeRadius</code></li>
+            <li><code>omenCooldownTicks</code></li>
+            <li><code>ashBurstRadius</code></li>
+            <li><code>ashBurstCooldownTicks</code></li>
+            <li><code>ritualRelicRadius</code></li>
+            <li><code>ritualRelicCount</code></li>
+            <li><code>cataclysmThreshold</code></li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Counterplay Notes</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li>Assign relic breakers early to end Ritual quickly.</li>
+            <li>Anchor around the safe ring between Omen casts.</li>
+            <li>Save mobility for Cataclysm Ash Burst knockback timing.</li>
+            <li>Plan defensive cooldowns when boss drops near threshold.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class='mt-16 border-t border-gray-800 pt-10'>
+      <h2 class='text-3xl font-black text-purple-300'>Boss #2 — Gravewarden</h2>
+      <p class='text-gray-300 mt-3'>
+        A sustain-focused undead commander that begins protected by gravestones, then pivots into pressure through summoned archers
+        and a revenant execute phase. Teams must juggle objective breaking, safe-zone movement, and anti-heal planning.
+      </p>
+
+      <div class='mt-6 grid gap-4 md:grid-cols-2'>
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Encounter Identity</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><strong class='text-gray-200'>Type:</strong> WorldBossType.GRAVEWARDEN</li>
+            <li><strong class='text-gray-200'>Core theme:</strong> Necrotic shielding, minion pressure, and self-healing attrition</li>
+            <li><strong class='text-gray-200'>Mechanic block:</strong> Chiseled Deepslate gravestones</li>
+            <li><strong class='text-gray-200'>Fight style:</strong> Objective shield phase → summon pressure phase → empowered revenant phase</li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Phase Timeline</h3>
+          <ol class='mt-3 list-decimal pl-5 text-gray-400 space-y-2'>
+            <li>
+              <strong class='text-gray-200'>Shielded Phase</strong>
+              <p>Boss is invulnerable while gravestones are active. Gravestone rings mark defensive safe zones.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Unsealed Phase</strong>
+              <p>After all gravestones are destroyed, boss becomes vulnerable and starts recurring archer waves.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Revenant Phase</strong>
+              <p>At health threshold, boss gains speed/resistance and adds Wraith Strike as periodic area punishment.</p>
+            </li>
+          </ol>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5 md:col-span-2'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Ability Kit</h3>
+          <div class='mt-3 grid gap-3 md:grid-cols-2'>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-purple-200'>Gravestone Bulwark</h4>
+              <p class='text-sm text-gray-400 mt-1'>Gravestones around the arena sustain invulnerability and project safe-zone rings for tactical movement.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-purple-200'>Soul Archer Summons</h4>
+              <p class='text-sm text-gray-400 mt-1'>Periodic skeleton archer waves spawn and target players outside gravestone safe zones, escalating in Revenant.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-purple-200'>Lifesteal Strikes</h4>
+              <p class='text-sm text-gray-400 mt-1'>On-hit healing scales from damage dealt; Lifesteal Ward armor enchant reduces that healing.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-purple-200'>Wraith Strike</h4>
+              <p class='text-sm text-gray-400 mt-1'>Revenant-only targeted soul blast on the nearest player, dealing area damage plus weakness.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Configurable Values</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><code>safeRadius</code></li>
+            <li><code>gravestoneCount</code></li>
+            <li><code>archerCooldownTicks</code></li>
+            <li><code>archerCount</code></li>
+            <li><code>revenantThreshold</code></li>
+            <li><code>wraithCooldownTicks</code></li>
+            <li><code>wraithStrikeDamage</code></li>
+            <li><code>wraithStrikeRadius</code></li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Counterplay Notes</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li>Split opening assignments to clear gravestones quickly and drop boss invulnerability.</li>
+            <li>Use safe rings near gravestones to avoid archer target priority when kiting waves.</li>
+            <li>Stack Lifesteal Ward coverage on frontline to suppress boss sustain from melee hits.</li>
+            <li>When Revenant starts, pre-position around nearest-player bait to control Wraith Strike overlap.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class='mt-16 border-t border-gray-800 pt-10'>
+      <h2 class='text-3xl font-black text-cyan-300'>Boss #3 — Hollow Colossus</h2>
+      <p class='text-gray-300 mt-3'>
+        A cyclical siege encounter built around timed phase rotations, weak-spot discipline, and escalating arena hazards.
+        The fight loops through defensive and offensive states while scaling pressure with each completed cycle.
+      </p>
+
+      <div class='mt-6 grid gap-4 md:grid-cols-2'>
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Encounter Identity</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><strong class='text-gray-200'>Type:</strong> WorldBossType.HOLLOW_COLOSSUS</li>
+            <li><strong class='text-gray-200'>Core theme:</strong> Sealed core cycles, terrain punishment, and scaling attrition</li>
+            <li><strong class='text-gray-200'>Mechanic model:</strong> Rotating safe zones + loop-based difficulty bonus</li>
+            <li><strong class='text-gray-200'>Fight style:</strong> Closed defense → Exposed weak spot → Rampaging AoE pressure</li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Phase Timeline</h3>
+          <ol class='mt-3 list-decimal pl-5 text-gray-400 space-y-2'>
+            <li>
+              <strong class='text-gray-200'>Closed Phase</strong>
+              <p>Core is sealed; direct damage is negated. Minion wave spawns and debris/collapse mechanics begin scaling per loop.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Exposed Phase</strong>
+              <p>Core opens for a short damage window. Only weak-spot hits (upper-body threshold) are accepted.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Rampaging Phase</strong>
+              <p>Boss becomes fully aggressive with recurring Shockwave and Targeted Debris until the cycle closes again.</p>
+            </li>
+          </ol>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5 md:col-span-2'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Ability Kit</h3>
+          <div class='mt-3 grid gap-3 md:grid-cols-2'>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-cyan-200'>Phase Shift Telegraphs</h4>
+              <p class='text-sm text-gray-400 mt-1'>Final-second warning cues announce phase changes with distinct sounds and particles for planning swaps.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-cyan-200'>Shockwave</h4>
+              <p class='text-sm text-gray-400 mt-1'>Rampaging radial knockback + damage pulse punishes stacked positioning near center mass.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-cyan-200'>Targeted Debris</h4>
+              <p class='text-sm text-gray-400 mt-1'>Falling deepslate barrages target player zones, excluding safe-zone circles.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-cyan-200'>Arena Collapse</h4>
+              <p class='text-sm text-gray-400 mt-1'>After repeated loops, random floor collapse strips terrain outside safe zones and increases movement risk.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Configurable Values</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><code>safeRadius</code></li>
+            <li><code>closedTicks</code></li>
+            <li><code>exposedTicks</code></li>
+            <li><code>rampagingTicks</code></li>
+            <li><code>difficultyBonusStep</code></li>
+            <li><code>shockwaveCooldownTicks</code></li>
+            <li><code>shockwaveDamage</code> / <code>shockwaveDamagePerBonus</code></li>
+            <li><code>targetedDebrisCooldownTicks</code> / <code>targetedDebrisCount</code></li>
+            <li><code>minionBaseCount</code>, <code>minionBaseHealth</code>, <code>minionHealthPerBonus</code></li>
+            <li><code>debrisBaseCount</code>, <code>debrisPerBonus</code></li>
+            <li><code>collapseBaseChance</code>, <code>collapseChancePerBonus</code></li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Counterplay Notes</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li>Pre-assign players to safe-zone anchors to reduce panic repositioning during debris windows.</li>
+            <li>Save burst cooldowns for Exposed phase and emphasize elevated hitboxes for weak-spot validation.</li>
+            <li>Spread before Shockwave cycles to limit chain displacement and recovery downtime.</li>
+            <li>Treat each closed-loop reset as a difficulty spike; clear minions quickly to preserve arena control.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+
+    <section class='mt-16 border-t border-gray-800 pt-10'>
+      <h2 class='text-3xl font-black text-sky-300'>Boss #4 — Storm Herald</h2>
+      <p class='text-gray-300 mt-3'>
+        A mobility-pressure encounter focused on anchor objective control, lightning zoning, and escalating tempest cadence.
+        Parties are rewarded for collapsing shield anchors quickly, then rotating through safe zones and knockback recovery lanes.
+      </p>
+
+      <div class='mt-6 grid gap-4 md:grid-cols-2'>
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Encounter Identity</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><strong class='text-gray-200'>Type:</strong> WorldBossType.STORM_HERALD</li>
+            <li><strong class='text-gray-200'>Core theme:</strong> Anchored storm shield, chained lightning, and tempest control</li>
+            <li><strong class='text-gray-200'>Mechanic block:</strong> Lightning Rod anchors</li>
+            <li><strong class='text-gray-200'>Fight style:</strong> Shield break opener → stormcaller control loop → tempest burst finisher</li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Phase Timeline</h3>
+          <ol class='mt-3 list-decimal pl-5 text-gray-400 space-y-2'>
+            <li>
+              <strong class='text-gray-200'>Shielded Phase</strong>
+              <p>Boss remains invulnerable while anchor rods are intact; anchors project visible safe rings.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Stormcaller Phase</strong>
+              <p>After anchors fall, boss unlocks Chain Lightning and Wind Gust cycles with telegraphed casts.</p>
+            </li>
+            <li>
+              <strong class='text-gray-200'>Tempest Phase</strong>
+              <p>At health threshold, cooldowns tighten and Tempest Storm activates for repeated lightning pressure.</p>
+            </li>
+          </ol>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5 md:col-span-2'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Ability Kit</h3>
+          <div class='mt-3 grid gap-3 md:grid-cols-2'>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-sky-200'>Chain Lightning</h4>
+              <p class='text-sm text-gray-400 mt-1'>Lightning checks players in range; standing near active anchor safe zones mitigates damage.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-sky-200'>Wind Gust</h4>
+              <p class='text-sm text-gray-400 mt-1'>AoE knockback burst with damage, stronger vertical lift during Tempest for displacement punishment.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-sky-200'>Tempest Storm</h4>
+              <p class='text-sm text-gray-400 mt-1'>Tempest-only targeted lightning spread around players, adding slowness and sustained attrition.</p>
+            </div>
+            <div class='rounded-lg border border-gray-700 bg-[#101010] p-4'>
+              <h4 class='font-semibold text-sky-200'>Anchor Safe Rings</h4>
+              <p class='text-sm text-gray-400 mt-1'>Active anchor zones create tactical shelter against Chain Lightning while shield objectives remain.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Configurable Values</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li><code>lightningSafeRadius</code></li>
+            <li><code>tempestThreshold</code></li>
+            <li><code>lightningCooldownTicks</code></li>
+            <li><code>windGustCooldownTicks</code></li>
+            <li><code>chainLightningDamage</code></li>
+            <li><code>windGustDamage</code></li>
+            <li><code>windGustRadius</code> / <code>windGustKnockback</code></li>
+            <li><code>tempestBonusDamage</code> / <code>tempestRadiusBonus</code></li>
+            <li><code>tempestStormCooldownTicks</code></li>
+            <li><code>tempestStormRadius</code> / <code>tempestStormDamage</code></li>
+          </ul>
+        </article>
+
+        <article class='rounded-xl border border-gray-800 bg-[#151515] p-5'>
+          <h3 class='text-xl font-bold text-white'>Subcategory: Counterplay Notes</h3>
+          <ul class='mt-3 list-disc pl-5 text-gray-400 space-y-1'>
+            <li>Assign split teams to anchor rods in opener to minimize shield uptime and transition quickly.</li>
+            <li>Use anchor ring positions to pre-stage for Chain Lightning windows before full shield break.</li>
+            <li>During Wind Gust telegraph, angle movement against knockback vectors to avoid chain displacement.</li>
+            <li>In Tempest, rotate defensive cooldowns around storm cycles and prioritize recovery from slowness locks.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
