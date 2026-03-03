@@ -1,13 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
+const { docClient, AWS_REGION } = require('./dynamodbClient');
 
 const runtimeDbPath = process.env.DB_PATH || path.join(__dirname, 'lastbreath-data.json');
 const DB_PATH = path.resolve(runtimeDbPath);
 const DB_BACKUP_PATH = `${DB_PATH}.bak`;
 
-const AWS_REGION = process.env.players_AWS_REGION || process.env.AWS_REGION || process.env.aws_region || '';
 const DYNAMODB_TABLE_NAME = process.env.players_DYNAMODB_TABLE_NAME || process.env.DYNAMODB_TABLE_NAME || '';
 const DYNAMODB_PARTITION_KEY = process.env.players_DYNAMODB_TABLE_PARTITION_KEY || 'PK';
 const DYNAMODB_SORT_KEY = process.env.players_DYNAMODB_TABLE_SORT_KEY || 'SK';
@@ -16,13 +15,7 @@ const DYNAMODB_STATE_SK = process.env.players_DYNAMODB_STATE_SK || 'CURRENT';
 
 const AWS_DB_ENABLED = Boolean(AWS_REGION && DYNAMODB_TABLE_NAME);
 
-const dynamoClient = AWS_DB_ENABLED
-  ? DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS_REGION }), {
-    marshallOptions: {
-      removeUndefinedValues: true
-    }
-  })
-  : null;
+const dynamoClient = AWS_DB_ENABLED ? docClient : null;
 
 let fsPersistenceAvailable = true;
 
