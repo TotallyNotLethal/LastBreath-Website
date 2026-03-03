@@ -354,8 +354,13 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="p-4 border-t border-gray-800 text-center">
-                    <button class="text-green-400 text-sm font-semibold hover:text-green-300 transition-colors">View Full Leaderboard →</button>
+                <div class="p-4 border-t border-gray-800 text-center space-y-3">
+                    <button id="leaderboard-toggle" class="text-green-400 text-sm font-semibold hover:text-green-300 transition-colors">Show Full Leaderboard →</button>
+                    <div id="leaderboard-pagination" class="hidden items-center justify-center gap-3 text-xs text-gray-300">
+                        <button id="leaderboard-prev" class="px-3 py-1 rounded border border-gray-700 hover:border-green-500 hover:text-green-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">← Previous</button>
+                        <span id="leaderboard-page-info" class="font-mono tracking-wide"></span>
+                        <button id="leaderboard-next" class="px-3 py-1 rounded border border-gray-700 hover:border-green-500 hover:text-green-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Next →</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -638,7 +643,11 @@
 
     <script>
         const API_BASE_URL = `${window.location.origin}/api`; // Production on lastbreath.net
+        const PREVIEW_LIMIT = 5;
+        const FULL_LEADERBOARD_PAGE_SIZE = 20;
         let currentPlayers = [];
+        let isFullLeaderboardMode = false;
+        let currentLeaderboardPage = 1;
         let activeMetric = "playtime";
         const METRIC_LABELS = {
             playtime: "Playtime",
@@ -773,7 +782,10 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/leaderboard?limit=all&metric=${encodeURIComponent(activeMetric)}`);
                 const result = await parseApiResponse(response, 'Leaderboard');
-                if (result.success) renderLeaderboard(result.data);
+                if (result.success) {
+                    currentLeaderboardPage = 1;
+                    renderLeaderboard(result.data);
+                }
             } catch (error) {
                 console.error('Failed to fetch leaderboard:', error);
                 if (!currentPlayers.length) {
@@ -794,16 +806,44 @@
 
         function renderLeaderboard(players) {
             const tbody = document.getElementById('leaderboard-body');
+            const toggleBtn = document.getElementById('leaderboard-toggle');
+            const paginationEl = document.getElementById('leaderboard-pagination');
+            const pageInfoEl = document.getElementById('leaderboard-page-info');
+            const prevBtn = document.getElementById('leaderboard-prev');
+            const nextBtn = document.getElementById('leaderboard-next');
+
             currentPlayers = players || [];
             if (!currentPlayers.length) {
                 tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">No players found. Be the first to join!</td></tr>`;
+                if (paginationEl) {
+                    paginationEl.classList.add('hidden');
+                    paginationEl.classList.remove('flex');
+                }
+                if (toggleBtn) toggleBtn.classList.add('hidden');
                 return;
             }
 
-            tbody.innerHTML = currentPlayers.map((player, index) => {
-                const rankClass = index === 0 ? 'rank-1' : index === 1 ? 'rank-2' : index === 2 ? 'rank-3' : 'text-gray-500';
-                const rankIcon = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                const borderColor = index === 0 ? 'border-yellow-500' : index === 1 ? 'border-gray-400' : index === 2 ? 'border-orange-500' : player.is_alive ? 'border-green-500/30' : 'grayscale opacity-50';
+            if (toggleBtn) {
+                toggleBtn.classList.remove('hidden');
+                toggleBtn.textContent = isFullLeaderboardMode ? 'Show Top 5 Only' : 'Show Full Leaderboard →';
+            }
+
+            const totalPages = Math.max(1, Math.ceil(currentPlayers.length / FULL_LEADERBOARD_PAGE_SIZE));
+            if (isFullLeaderboardMode) {
+                currentLeaderboardPage = Math.min(Math.max(currentLeaderboardPage, 1), totalPages);
+            } else {
+                currentLeaderboardPage = 1;
+            }
+
+            const startIndex = isFullLeaderboardMode ? (currentLeaderboardPage - 1) * FULL_LEADERBOARD_PAGE_SIZE : 0;
+            const endIndex = isFullLeaderboardMode ? startIndex + FULL_LEADERBOARD_PAGE_SIZE : PREVIEW_LIMIT;
+            const visiblePlayers = currentPlayers.slice(startIndex, endIndex);
+
+            tbody.innerHTML = visiblePlayers.map((player, index) => {
+                const absoluteIndex = startIndex + index;
+                const rankClass = absoluteIndex === 0 ? 'rank-1' : absoluteIndex === 1 ? 'rank-2' : absoluteIndex === 2 ? 'rank-3' : 'text-gray-500';
+                const rankIcon = absoluteIndex === 0 ? '👑' : absoluteIndex === 1 ? '🥈' : absoluteIndex === 2 ? '🥉' : '';
+                const borderColor = absoluteIndex === 0 ? 'border-yellow-500' : absoluteIndex === 1 ? 'border-gray-400' : absoluteIndex === 2 ? 'border-orange-500' : player.is_alive ? 'border-green-500/30' : 'grayscale opacity-50';
                 const statusClass = player.status === 'Alive' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
                 const metricLabel = METRIC_LABELS[activeMetric] || 'Playtime';
                 const metricValue = activeMetric === 'playtime'
@@ -815,7 +855,7 @@
                     <tr class="hover:bg-white/5 transition-colors">
                         <td class="px-6 py-4"><span class="${rankClass} text-2xl">${rankIcon} ${player.rank}</span></td>
                         <td class="px-6 py-4">
-                            <button type="button" class="leaderboard-player-btn interactive-focus flex items-center space-x-3 w-full text-left" data-player-index="${index}">
+                            <button type="button" class="leaderboard-player-btn interactive-focus flex items-center space-x-3 w-full text-left" data-player-index="${absoluteIndex}">
                                 <img src="${player.avatar}" alt="${player.username}" class="w-10 h-10 rounded-lg border-2 ${borderColor}">
                                 <div>
                                     <p class="font-bold ${nameClass}">${player.username}</p>
@@ -832,6 +872,20 @@
                     </tr>
                 `;
             }).join('');
+
+            if (paginationEl && pageInfoEl && prevBtn && nextBtn) {
+                if (isFullLeaderboardMode) {
+                    paginationEl.classList.remove('hidden');
+                    paginationEl.classList.add('flex');
+                    pageInfoEl.textContent = `Page ${currentLeaderboardPage} of ${totalPages}`;
+                    prevBtn.disabled = currentLeaderboardPage <= 1;
+                    nextBtn.disabled = currentLeaderboardPage >= totalPages;
+                } else {
+                    paginationEl.classList.add('hidden');
+                    paginationEl.classList.remove('flex');
+                }
+            }
+
             lucide.createIcons();
         }
 
@@ -874,10 +928,41 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const leaderboardSort = document.getElementById('leaderboard-sort');
+            const leaderboardToggle = document.getElementById('leaderboard-toggle');
+            const leaderboardPrev = document.getElementById('leaderboard-prev');
+            const leaderboardNext = document.getElementById('leaderboard-next');
+
             if (leaderboardSort) {
                 leaderboardSort.addEventListener('change', (event) => {
                     activeMetric = event.target.value || 'playtime';
                     fetchLeaderboard();
+                });
+            }
+
+            if (leaderboardToggle) {
+                leaderboardToggle.addEventListener('click', () => {
+                    isFullLeaderboardMode = !isFullLeaderboardMode;
+                    currentLeaderboardPage = 1;
+                    renderLeaderboard(currentPlayers);
+                });
+            }
+
+            if (leaderboardPrev) {
+                leaderboardPrev.addEventListener('click', () => {
+                    if (currentLeaderboardPage > 1) {
+                        currentLeaderboardPage -= 1;
+                        renderLeaderboard(currentPlayers);
+                    }
+                });
+            }
+
+            if (leaderboardNext) {
+                leaderboardNext.addEventListener('click', () => {
+                    const totalPages = Math.max(1, Math.ceil(currentPlayers.length / FULL_LEADERBOARD_PAGE_SIZE));
+                    if (currentLeaderboardPage < totalPages) {
+                        currentLeaderboardPage += 1;
+                        renderLeaderboard(currentPlayers);
+                    }
                 });
             }
 
