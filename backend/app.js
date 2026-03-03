@@ -120,13 +120,13 @@ const authenticateApiKey = (req, res, next) => {
 // Get leaderboard
 app.get('/api/leaderboard', async (req, res) => {
   try {
-    const requestedLimit = String(req.query.limit || '250').toLowerCase();
-    const limit = requestedLimit === 'all' ? Number.MAX_SAFE_INTEGER : (parseInt(requestedLimit, 10) || 250);
+    const requestedLimit = String(req.query.limit || 'all').toLowerCase();
+    const limit = requestedLimit === 'all' ? Number.MAX_SAFE_INTEGER : (parseInt(requestedLimit, 10) || 5);
     const requestedMetric = String(req.query.metric || 'playtime').toLowerCase();
     const metric = LEADERBOARD_METRICS.includes(requestedMetric) ? requestedMetric : 'playtime';
-    const players = await db.getTopPlayers(limit, metric);
-    
-    // Add rank to each player
+    const players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric);
+
+    // Add rank to each player from the full roster in Blob-backed storage.
     const rankedPlayers = players.map((player, index) => ({
       rank: index + 1,
       ...player,
@@ -139,8 +139,9 @@ app.get('/api/leaderboard', async (req, res) => {
 
     res.json({
       success: true,
-      data: rankedPlayers,
+      data: rankedPlayers.slice(0, Math.max(1, limit)),
       total_players: rankedPlayers.length,
+      preview_count: Math.min(Math.max(1, limit), rankedPlayers.length),
       available_metrics: LEADERBOARD_METRICS,
       timestamp: new Date().toISOString()
     });
