@@ -377,8 +377,9 @@ class Database {
       existing.username = providedUsername;
       this.usernameLookupCache.set(String(uuid).replace(/-/g, '').trim(), providedUsername);
     } else if (!existing.username || existing.username === 'Unknown Player') {
-      const resolvedUsername = await this.resolveUsernameFromUUID(uuid);
-      existing.username = resolvedUsername || existing.username || 'Unknown Player';
+      // Avoid blocking API writes on external Mojang lookups.
+      // We keep the legacy-friendly placeholder and let future payloads overwrite it.
+      existing.username = existing.username || 'Unknown Player';
     }
     existing.nickname = payload.nickname ?? existing.nickname;
     existing.time_alive_ticks = Number(payload.time_alive ?? payload.time_alive_ticks ?? existing.time_alive_ticks) || 0;
