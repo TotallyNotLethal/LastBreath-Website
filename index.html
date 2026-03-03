@@ -649,6 +649,8 @@
         let isFullLeaderboardMode = false;
         let currentLeaderboardPage = 1;
         let activeMetric = "playtime";
+        let statsStream = null;
+        let statsStreamReconnectTimer = null;
         const METRIC_LABELS = {
             playtime: "Playtime",
             mobs_killed: "Mobs Killed",
@@ -802,6 +804,39 @@
             animateValue('stat-deaths', 0, data.total_deaths || 0, 2000);
             animateValue('stat-winners', 0, data.dragon_slayers || 0, 2000);
             document.getElementById('stat-uptime').textContent = `${data.server_uptime || 99.9}%`;
+        }
+
+
+        function connectStatsStream() {
+            if (typeof EventSource === 'undefined') return;
+
+            if (statsStream) {
+                statsStream.close();
+            }
+
+            const streamUrl = `${API_BASE_URL}/stats/stream`;
+            statsStream = new EventSource(streamUrl);
+
+            statsStream.addEventListener('stats', (event) => {
+                try {
+                    const payload = JSON.parse(event.data || '{}');
+                    if (payload?.data) {
+                        updateStats(payload.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to parse stats stream payload:', error);
+                }
+            });
+
+            statsStream.onerror = () => {
+                statsStream?.close();
+                if (!statsStreamReconnectTimer) {
+                    statsStreamReconnectTimer = setTimeout(() => {
+                        statsStreamReconnectTimer = null;
+                        connectStatsStream();
+                    }, 5000);
+                }
+            };
         }
 
         function renderLeaderboard(players) {
@@ -968,10 +1003,17 @@
 
             fetchServerStats();
             fetchLeaderboard();
+            connectStatsStream();
+
             setInterval(() => {
                 fetchServerStats();
                 fetchLeaderboard();
             }, 30000);
+
+            window.addEventListener('beforeunload', () => {
+                if (statsStream) statsStream.close();
+                if (statsStreamReconnectTimer) clearTimeout(statsStreamReconnectTimer);
+            });
         });
 
         document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
