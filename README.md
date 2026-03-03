@@ -61,6 +61,7 @@ Send this either as:
 - `GET /api/stats`
 - `GET /api/state`
 - `GET /api/states`
+- `GET /api/minecraft/status`
 - `GET /api/player/:username`
 - `GET /api/search?q=Name`
 - `GET /api/health`
@@ -102,7 +103,51 @@ Body examples:
 { "event": "stats", "uuid": "uuid-here", "survival_time": 12345, "kills": 22 }
 ```
 
+```json
+{
+  "event": "bulk_stats",
+  "players": [
+    {
+      "uuid": "11111111-1111-1111-1111-111111111111",
+      "username": "PlayerOne",
+      "nickname": "Nick",
+      "time_alive": 987654,
+      "deaths": 2,
+      "revives": 1,
+      "mobs_killed": 130,
+      "asteroid_loots": 7,
+      "crops_harvested": 410,
+      "blocks_mined": 8000,
+      "blocks_placed": 2600,
+      "fish_caught": 45,
+      "player_kills": 3,
+      "rare_ores_mined": 91,
+      "world_scaler_enabled": true,
+      "unlocked_titles": ["SURVIVOR", "VOID_WALKER"],
+      "equipped_title": "SURVIVOR",
+      "unlocked_prefixes": ["ALPHA"],
+      "equipped_prefix": "ALPHA",
+      "unlocked_auras": ["SHADOW"],
+      "equipped_aura": "SHADOW",
+      "unlocked_kill_messages": ["REAPER"],
+      "equipped_kill_message": "REAPER",
+      "is_alive": false
+    }
+  ]
+}
+```
+
 `survival_time` is stored in **minutes**.
+
+`time_alive` is expected in **ticks** (20 ticks = 1 second), matching the Minecraft plugin model.
+
+You can also bulk-import directly through:
+
+- `POST /api/players/bulk` with body:
+
+```json
+{ "players": [/* same full player objects as above */] }
+```
 
 ---
 

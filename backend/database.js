@@ -26,6 +26,54 @@ class Database {
     console.log(`Connected to JSON database at ${DB_PATH}`);
   }
 
+  buildDefaultPlayer(uuid, username = 'Unknown Player') {
+    return {
+      id: this.state.players.length + 1,
+      uuid,
+      username,
+      nickname: null,
+      time_alive_ticks: 0,
+      survival_time: 0,
+      deaths: 0,
+      revives: 0,
+      mobs_killed: 0,
+      asteroid_loots: 0,
+      crops_harvested: 0,
+      blocks_mined: 0,
+      blocks_placed: 0,
+      fish_caught: 0,
+      player_kills: 0,
+      rare_ores_mined: 0,
+      world_scaler_enabled: false,
+      unlocked_titles: [],
+      equipped_title: null,
+      unlocked_prefixes: [],
+      equipped_prefix: null,
+      unlocked_auras: [],
+      equipped_aura: null,
+      unlocked_kill_messages: [],
+      equipped_kill_message: null,
+      is_alive: 1,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      avatar_url: null,
+      join_date: new Date().toISOString().split('T')[0]
+    };
+  }
+
+  normalizePlayer(player) {
+    return {
+      ...this.buildDefaultPlayer(player.uuid, player.username),
+      ...player,
+      username: player.username || player.nickname || 'Unknown Player',
+      nickname: player.nickname || null,
+      unlocked_titles: Array.isArray(player.unlocked_titles) ? player.unlocked_titles : [],
+      unlocked_prefixes: Array.isArray(player.unlocked_prefixes) ? player.unlocked_prefixes : [],
+      unlocked_auras: Array.isArray(player.unlocked_auras) ? player.unlocked_auras : [],
+      unlocked_kill_messages: Array.isArray(player.unlocked_kill_messages) ? player.unlocked_kill_messages : []
+    };
+  }
+
   load() {
     try {
       if (!fs.existsSync(DB_PATH)) {
@@ -41,7 +89,7 @@ class Database {
 
       const parsed = JSON.parse(raw);
       this.state = {
-        players: Array.isArray(parsed.players) ? parsed.players : [],
+        players: Array.isArray(parsed.players) ? parsed.players.map((player) => this.normalizePlayer(player)) : [],
         sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
         server_stats: {
           total_deaths: parsed.server_stats?.total_deaths || 0,
@@ -66,18 +114,56 @@ class Database {
     this.state.server_stats.online_players = this.state.sessions.filter((s) => !s.logout_time).length;
   }
 
-  getTopPlayers(limit = 10) {
+  getTopPlayers(limit = 10, metric = 'playtime') {
+    const metricExtractors = {
+      playtime: (p) => Number(p.time_alive_ticks || 0),
+      mobs_killed: (p) => Number(p.mobs_killed || 0),
+      player_kills: (p) => Number(p.player_kills || 0),
+      deaths: (p) => Number(p.deaths || 0),
+      revives: (p) => Number(p.revives || 0),
+      blocks_mined: (p) => Number(p.blocks_mined || 0),
+      blocks_placed: (p) => Number(p.blocks_placed || 0),
+      rare_ores_mined: (p) => Number(p.rare_ores_mined || 0),
+      crops_harvested: (p) => Number(p.crops_harvested || 0),
+      fish_caught: (p) => Number(p.fish_caught || 0),
+      asteroids_looted: (p) => Number(p.asteroid_loots || 0)
+    };
+    const extractor = metricExtractors[metric] || metricExtractors.playtime;
+
     const rows = [...this.state.players]
-      .sort((a, b) => (b.survival_time - a.survival_time) || (b.kills - a.kills))
+      .sort((a, b) => (extractor(b) - extractor(a)) || (Number(b.time_alive_ticks || 0) - Number(a.time_alive_ticks || 0)))
       .slice(0, limit)
       .map((p) => ({
+        uuid: p.uuid,
         username: p.username,
+        nickname: p.nickname,
+        time_alive_ticks: p.time_alive_ticks,
         survival_time: p.survival_time,
         kills: p.kills,
         deaths: p.deaths,
+        revives: p.revives,
+        mobs_killed: p.mobs_killed,
+        asteroid_loots: p.asteroid_loots,
+        crops_harvested: p.crops_harvested,
+        blocks_mined: p.blocks_mined,
+        blocks_placed: p.blocks_placed,
+        fish_caught: p.fish_caught,
+        player_kills: p.player_kills,
+        rare_ores_mined: p.rare_ores_mined,
+        world_scaler_enabled: p.world_scaler_enabled,
+        unlocked_titles: p.unlocked_titles,
+        equipped_title: p.equipped_title,
+        unlocked_prefixes: p.unlocked_prefixes,
+        equipped_prefix: p.equipped_prefix,
+        unlocked_auras: p.unlocked_auras,
+        equipped_aura: p.equipped_aura,
+        unlocked_kill_messages: p.unlocked_kill_messages,
+        equipped_kill_message: p.equipped_kill_message,
         is_alive: p.is_alive,
         join_date: p.join_date,
         avatar_url: p.avatar_url,
+        leaderboard_value: extractor(p),
+        leaderboard_metric: metric,
         status: p.is_alive ? 'Alive' : 'Dead'
       }));
 
@@ -97,19 +183,7 @@ class Database {
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) return Promise.resolve(existing.id);
 
-    const player = {
-      id: this.state.players.length + 1,
-      uuid,
-      username,
-      survival_time: 0,
-      kills: 0,
-      deaths: 0,
-      is_alive: 1,
-      last_login: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      avatar_url: null,
-      join_date: new Date().toISOString().split('T')[0]
-    };
+    const player = this.buildDefaultPlayer(uuid, username);
 
     this.state.players.push(player);
     this.persist();
@@ -136,6 +210,56 @@ class Database {
     existing.last_login = new Date().toISOString();
     this.persist();
     return Promise.resolve();
+  }
+
+  upsertFullPlayerStats(payload = {}) {
+    const uuid = payload.uuid;
+    if (!uuid) return Promise.resolve();
+
+    let existing = this.state.players.find((p) => p.uuid === uuid);
+    if (!existing) {
+      existing = this.buildDefaultPlayer(uuid, payload.username || payload.nickname || 'Unknown Player');
+      this.state.players.push(existing);
+    }
+
+    existing.username = payload.username || payload.nickname || existing.username;
+    existing.nickname = payload.nickname ?? existing.nickname;
+    existing.time_alive_ticks = Number(payload.time_alive ?? payload.time_alive_ticks ?? existing.time_alive_ticks) || 0;
+    existing.survival_time = Math.floor(existing.time_alive_ticks / (20 * 60));
+    existing.kills = Number(payload.kills ?? payload.mobs_killed ?? existing.kills) || 0;
+    existing.deaths = Number(payload.deaths ?? existing.deaths) || 0;
+    existing.revives = Number(payload.revives ?? existing.revives) || 0;
+    existing.mobs_killed = Number(payload.mobs_killed ?? existing.mobs_killed) || 0;
+    existing.asteroid_loots = Number(payload.asteroid_loots ?? existing.asteroid_loots) || 0;
+    existing.crops_harvested = Number(payload.crops_harvested ?? existing.crops_harvested) || 0;
+    existing.blocks_mined = Number(payload.blocks_mined ?? existing.blocks_mined) || 0;
+    existing.blocks_placed = Number(payload.blocks_placed ?? existing.blocks_placed) || 0;
+    existing.fish_caught = Number(payload.fish_caught ?? existing.fish_caught) || 0;
+    existing.player_kills = Number(payload.player_kills ?? existing.player_kills) || 0;
+    existing.rare_ores_mined = Number(payload.rare_ores_mined ?? existing.rare_ores_mined) || 0;
+    existing.world_scaler_enabled = Boolean(payload.world_scaler_enabled ?? existing.world_scaler_enabled);
+    existing.unlocked_titles = Array.isArray(payload.unlocked_titles) ? payload.unlocked_titles : existing.unlocked_titles;
+    existing.equipped_title = payload.equipped_title ?? existing.equipped_title;
+    existing.unlocked_prefixes = Array.isArray(payload.unlocked_prefixes) ? payload.unlocked_prefixes : existing.unlocked_prefixes;
+    existing.equipped_prefix = payload.equipped_prefix ?? existing.equipped_prefix;
+    existing.unlocked_auras = Array.isArray(payload.unlocked_auras) ? payload.unlocked_auras : existing.unlocked_auras;
+    existing.equipped_aura = payload.equipped_aura ?? existing.equipped_aura;
+    existing.unlocked_kill_messages = Array.isArray(payload.unlocked_kill_messages) ? payload.unlocked_kill_messages : existing.unlocked_kill_messages;
+    existing.equipped_kill_message = payload.equipped_kill_message ?? existing.equipped_kill_message;
+    if (typeof payload.is_alive === 'boolean') {
+      existing.is_alive = payload.is_alive ? 1 : 0;
+    }
+    existing.last_login = new Date().toISOString();
+    this.persist();
+    return Promise.resolve(existing);
+  }
+
+  upsertAllPlayerStats(players = []) {
+    if (!Array.isArray(players)) return Promise.resolve(0);
+    players.forEach((player) => {
+      this.upsertFullPlayerStats(player);
+    });
+    return Promise.resolve(players.length);
   }
 
   recordDeath(uuid) {

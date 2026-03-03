@@ -315,9 +315,21 @@
             <div class="max-w-4xl mx-auto glass-panel rounded-2xl overflow-hidden border border-gray-800">
                 <div class="p-6 border-b border-gray-800 flex justify-between items-center">
                     <h3 class="text-xl font-bold text-white">Top Survivors</h3>
-                    <div class="flex space-x-2">
-                        <button class="px-3 py-1 rounded bg-green-600 text-xs font-semibold">All Time</button>
-                        <button class="px-3 py-1 rounded bg-gray-800 text-xs font-semibold text-gray-400 hover:bg-gray-700">This Month</button>
+                    <div class="flex items-center gap-2">
+                        <label for="leaderboard-sort" class="text-xs uppercase tracking-wider text-gray-400">Sort By</label>
+                        <select id="leaderboard-sort" class="bg-gray-900 border border-gray-700 text-gray-100 text-xs rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="playtime" selected>Playtime</option>
+                            <option value="mobs_killed">Mobs Killed</option>
+                            <option value="player_kills">Player Kills</option>
+                            <option value="deaths">Deaths</option>
+                            <option value="revives">Revives</option>
+                            <option value="blocks_mined">Blocks Mined</option>
+                            <option value="blocks_placed">Blocks Placed</option>
+                            <option value="rare_ores_mined">Rare Ores Mined</option>
+                            <option value="crops_harvested">Crops Harvested</option>
+                            <option value="fish_caught">Fish Caught</option>
+                            <option value="asteroids_looted">Asteroids Looted</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -327,8 +339,8 @@
                             <tr>
                                 <th class="px-6 py-4">Rank</th>
                                 <th class="px-6 py-4">Player</th>
-                                <th class="px-6 py-4">Survival Time</th>
-                                <th class="px-6 py-4">Kills</th>
+                                <th class="px-6 py-4">Value</th>
+                                <th class="px-6 py-4">Category</th>
                                 <th class="px-6 py-4">Status</th>
                             </tr>
                         </thead>
@@ -555,6 +567,7 @@
                             <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Leaderboard Rank</p><p id="player-modal-rank" class="font-mono text-lg"></p></div>
                             <div class="glass-panel rounded-lg p-3"><p class="text-gray-400">Joined</p><p id="player-modal-joined" class="font-mono text-lg"></p></div>
                         </div>
+                        <div id="player-modal-extra" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm"></div>
                         <div>
                             <h4 class="text-sm uppercase tracking-wider text-gray-400 mb-2">Achievements</h4>
                             <div id="player-modal-achievements" class="flex flex-wrap gap-2"></div>
@@ -626,6 +639,20 @@
     <script>
         const API_BASE_URL = `${window.location.origin}/api`; // Production on lastbreath.net
         let currentPlayers = [];
+        let activeMetric = "playtime";
+        const METRIC_LABELS = {
+            playtime: "Playtime",
+            mobs_killed: "Mobs Killed",
+            player_kills: "Player Kills",
+            deaths: "Deaths",
+            revives: "Revives",
+            blocks_mined: "Blocks Mined",
+            blocks_placed: "Blocks Placed",
+            rare_ores_mined: "Rare Ores Mined",
+            crops_harvested: "Crops Harvested",
+            fish_caught: "Fish Caught",
+            asteroids_looted: "Asteroids Looted"
+        };
 
         lucide.createIcons();
 
@@ -668,6 +695,25 @@
             document.getElementById('player-modal-avatar').src = player.avatar;
             document.getElementById('player-modal-avatar').alt = `${player.username} avatar`;
             document.getElementById('player-modal-survival').textContent = `${player.survival_days || 0} days`;
+            document.getElementById('player-modal-extra').innerHTML = [
+                ['UUID', player.uuid || 'Unknown'],
+                ['Time Alive', `${Math.floor((player.time_alive_ticks || 0) / 20 / 60)}m`],
+                ['Mobs Killed', (player.mobs_killed || 0).toLocaleString()],
+                ['Player Kills', (player.player_kills || 0).toLocaleString()],
+                ['Deaths', (player.deaths || 0).toLocaleString()],
+                ['Revives', (player.revives || 0).toLocaleString()],
+                ['Blocks Mined', (player.blocks_mined || 0).toLocaleString()],
+                ['Blocks Placed', (player.blocks_placed || 0).toLocaleString()],
+                ['Rare Ores', (player.rare_ores_mined || 0).toLocaleString()],
+                ['Crops', (player.crops_harvested || 0).toLocaleString()],
+                ['Fish', (player.fish_caught || 0).toLocaleString()],
+                ['Asteroids', (player.asteroid_loots || 0).toLocaleString()],
+                ['World Scaler', player.world_scaler_enabled ? 'Enabled' : 'Disabled'],
+                ['Title', player.equipped_title || 'None'],
+                ['Prefix', player.equipped_prefix || 'None'],
+                ['Aura', player.equipped_aura || 'None'],
+                ['Kill Message', player.equipped_kill_message || 'None']
+            ].map(([key, value]) => `<div class="glass-panel rounded p-2 border border-gray-800"><p class="text-gray-500 text-xs">${key}</p><p class="text-gray-100 font-mono break-all">${value}</p></div>`).join('');
             document.getElementById('player-modal-kills').textContent = (player.kills || 0).toLocaleString();
             document.getElementById('player-modal-rank').textContent = `#${player.rank || '-'}`;
             document.getElementById('player-modal-joined').textContent = player.join_date || '2024';
@@ -725,7 +771,7 @@
 
         async function fetchLeaderboard() {
             try {
-                const response = await fetch(`${API_BASE_URL}/leaderboard?limit=10`);
+                const response = await fetch(`${API_BASE_URL}/leaderboard?limit=10&metric=${encodeURIComponent(activeMetric)}`);
                 const result = await parseApiResponse(response, 'Leaderboard');
                 if (result.success) renderLeaderboard(result.data);
             } catch (error) {
@@ -757,6 +803,11 @@
                 const rankIcon = index === 0 ? '👑' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
                 const borderColor = index === 0 ? 'border-yellow-500' : index === 1 ? 'border-gray-400' : index === 2 ? 'border-orange-500' : player.is_alive ? 'border-green-500/30' : 'grayscale opacity-50';
                 const statusClass = player.status === 'Alive' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
+                const metricLabel = METRIC_LABELS[activeMetric] || 'Playtime';
+                const metricValue = activeMetric === 'playtime'
+                    ? `${player.survival_days || 0} days`
+                    : (player[activeMetric] || player.leaderboard_value || 0).toLocaleString();
+                const nameClass = player.is_alive ? 'text-white' : 'text-gray-400 line-through';
 
                 return `
                     <tr class="hover:bg-white/5 transition-colors">
@@ -765,13 +816,13 @@
                             <button type="button" class="leaderboard-player-btn interactive-focus flex items-center space-x-3 w-full text-left" data-player-index="${index}">
                                 <img src="${player.avatar}" alt="${player.username}" class="w-10 h-10 rounded-lg border-2 ${borderColor}">
                                 <div>
-                                    <p class="font-bold ${player.is_alive ? 'text-white' : 'text-gray-400'}">${player.username}</p>
-                                    <p class="text-xs text-gray-500">Joined ${player.join_date || '2024'} • Click for profile or wiki page</p>
+                                    <p class="font-bold ${nameClass}">${player.username}</p>
+                                    <p class="text-xs text-gray-500">Joined ${player.join_date || '2024'} • Click for full profile</p>
                                 </div>
                             </button>
                         </td>
-                        <td class="px-6 py-4 font-mono ${player.is_alive ? 'text-green-400' : 'text-gray-500'}">${player.survival_days} days</td>
-                        <td class="px-6 py-4 font-mono">${player.kills || 0}</td>
+                        <td class="px-6 py-4 font-mono ${player.is_alive ? 'text-green-400' : 'text-gray-500'}">${metricValue}</td>
+                        <td class="px-6 py-4 font-mono text-gray-300">${metricLabel}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 ${statusClass} text-xs rounded-full font-semibold">${player.status}</span>
                             <a href="/wiki/player-profile.html?username=${encodeURIComponent(player.username || '')}&rank=${encodeURIComponent(player.rank || '')}&survival_days=${encodeURIComponent(player.survival_days || 0)}&kills=${encodeURIComponent(player.kills || 0)}&status=${encodeURIComponent(player.status || '')}&join_date=${encodeURIComponent(player.join_date || '2024')}&avatar=${encodeURIComponent(player.avatar || '')}" class="block mt-2 text-xs text-purple-300 hover:text-purple-200">Wiki page ↗</a>
@@ -820,6 +871,14 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            const leaderboardSort = document.getElementById('leaderboard-sort');
+            if (leaderboardSort) {
+                leaderboardSort.addEventListener('change', (event) => {
+                    activeMetric = event.target.value || 'playtime';
+                    fetchLeaderboard();
+                });
+            }
+
             fetchServerStats();
             fetchLeaderboard();
             setInterval(() => {
