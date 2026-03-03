@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Item Recipes</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100">
+  <main class="max-w-6xl mx-auto px-6 py-12">
+    <a href="/wiki/index.html" class="text-purple-400">← All wiki pages</a>
+    <h1 class="text-4xl font-black mt-4">Custom Item Recipes</h1>
+    <p class="text-gray-300 mt-3">Crafting-bench previews for all custom recipes (visual only, in-game matching still uses exact item logic where configured).</p>
+
+    <section class="grid xl:grid-cols-2 gap-6 mt-8">
+      <article class="recipe-card">
+        <h2 class="text-2xl font-bold">Custom Enchant Book</h2>
+        <p class="result">Result: <strong>CustomEnchantBook</strong></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+            <div class="slot"><img data-item="paper" data-glint="true" alt="Enchant Page"><span>Enchant Page*</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="enchanted_book" data-glint="true" alt="Custom Enchant Book"><span>Custom Enchant Book</span></div>
+        </div>
+        <p class="note">* Uses allowed IDs from <code>asteroid.loot.enchantPages.ids</code>; falls back to <code>unknown</code>.</p>
+      </article>
+
+      <article class="recipe-card">
+        <h2 class="text-2xl font-bold">Enhanced Grindstone</h2>
+        <p class="result">Result: <strong>EnhancedGrindstone</strong></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="dragon_egg" alt="Dragon Egg"><span>Dragon Egg</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="dragon_egg" alt="Dragon Egg"><span>Dragon Egg</span></div>
+            <div class="slot"><img data-item="grindstone" alt="Grindstone"><span>Grindstone</span></div>
+            <div class="slot"><img data-item="dragon_egg" alt="Dragon Egg"><span>Dragon Egg</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="netherite_block" alt="Netherite Block"><span>Netherite Block</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="grindstone" data-glint="true" alt="Enhanced Grindstone"><span>Enhanced Grindstone</span></div>
+        </div>
+      </article>
+
+      <article class="recipe-card">
+        <h2 class="text-2xl font-bold">Totem of Life</h2>
+        <p class="result">Result: <strong>TotemOfLife</strong> <span class="text-purple-300">(shown as enchanted totem of undying)</span></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="totem_of_undying" alt="Totem"><span>Totem</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="totem_of_undying" alt="Totem"><span>Totem</span></div>
+            <div class="slot"><img data-item="totem_of_undying" alt="Totem"><span>Totem</span></div>
+            <div class="slot"><img data-item="totem_of_undying" alt="Totem"><span>Totem</span></div>
+            <div class="slot"><img data-item="dragon_breath" alt="Dragon Breath"><span>Dragon Breath</span></div>
+            <div class="slot"><img data-item="totem_of_undying" alt="Totem"><span>Totem</span></div>
+            <div class="slot"><img data-item="dragon_breath" alt="Dragon Breath"><span>Dragon Breath</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="totem_of_undying" data-glint="true" alt="Totem of Life"><span>Totem of Life</span></div>
+        </div>
+      </article>
+
+      <article class="recipe-card">
+        <h2 class="text-2xl font-bold">World Boss Portal Compass</h2>
+        <p class="result">Result: <strong>WorldBossPortalCompass</strong></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="compass" alt="Compass"><span>Compass</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+            <div class="slot"><img data-item="ender_eye" alt="Ender Eye"><span>Ender Eye</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="compass" data-glint="true" alt="World Boss Portal Compass"><span>Boss Compass</span></div>
+        </div>
+      </article>
+
+      <article class="recipe-card">
+        <h2 class="text-2xl font-bold">Rebirth Stone</h2>
+        <p class="result">Result: <strong>RebirthStone</strong> <span class="text-purple-300">(shown as enchanted echo shard)</span></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="end_crystal" alt="End Crystal"><span>End Crystal</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="end_crystal" alt="End Crystal"><span>End Crystal</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="dragon_egg" alt="Dragon Egg"><span>Dragon Egg</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="end_crystal" alt="End Crystal"><span>End Crystal</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot"><img data-item="end_crystal" alt="End Crystal"><span>End Crystal</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="echo_shard" data-glint="true" alt="Rebirth Stone"><span>Rebirth Stone</span></div>
+        </div>
+      </article>
+
+      <article class="recipe-card xl:col-span-2">
+        <h2 class="text-2xl font-bold">Gracestone</h2>
+        <p class="result">Result: <strong>Gracestone</strong></p>
+        <div class="crafting-layout mt-4">
+          <div class="bench-grid">
+            <div class="slot"><img data-item="heavy_core" alt="Heavy Core"><span>Heavy Core</span></div>
+            <div class="slot"><img data-item="elytra" alt="Elytra"><span>Elytra</span></div>
+            <div class="slot"><img data-item="heavy_core" alt="Heavy Core"><span>Heavy Core</span></div>
+            <div class="slot"><img data-item="heavy_core" alt="Heavy Core"><span>Heavy Core</span></div>
+            <div class="slot enchanted"><img data-item="totem_of_undying" data-glint="true" alt="Totem of Life"><span>Totem of Life*</span></div>
+            <div class="slot"><img data-item="heavy_core" alt="Heavy Core"><span>Heavy Core</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+            <div class="slot enchanted"><img data-item="echo_shard" data-glint="true" alt="Rebirth Stone"><span>Rebirth Stone*</span></div>
+            <div class="slot"><img data-item="nether_star" alt="Nether Star"><span>Nether Star</span></div>
+          </div>
+          <div class="arrow">➜</div>
+          <div class="output-slot enchanted"><img data-item="heart_of_the_sea" data-glint="true" alt="Gracestone"><span>Gracestone</span></div>
+        </div>
+        <p class="note">* Visuals show custom items as enchanted variants. In-game, these two slots still require exact custom item matches.</p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const ITEM_API_KEY = "mcapi_5ac3cc7a926e47045352b41f28b31582d634dc2fa1fb17d88fe1a6901b671fae";
+    const ITEM_PROXY_URL = "https://www.minecraftitems.xyz/api/proxy";
+
+    function normalizeBase64(payload) {
+      if (!payload) return null;
+      if (typeof payload === "string") return payload;
+
+      const candidates = [
+        payload.base64,
+        payload.image,
+        payload.data,
+        payload.result?.base64,
+        payload.result?.image,
+        payload.result?.data,
+      ];
+      return candidates.find((v) => typeof v === "string" && v.length > 0) || null;
+    }
+
+    async function setItemImage(img) {
+      const item = img.dataset.item;
+      const glint = img.dataset.glint === "true";
+
+      try {
+        const response = await fetch(ITEM_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: `/api/item/${item}`,
+            method: "GET",
+            queryParams: {
+              apiKey: ITEM_API_KEY,
+              ...(glint ? { glint: "true" } : {}),
+            },
+          }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const payload = await response.json();
+        const base64 = normalizeBase64(payload);
+        if (!base64) throw new Error("No base64 image in proxy response");
+
+        img.src = base64.startsWith("data:image") ? base64 : `data:image/png;base64,${base64}`;
+      } catch (error) {
+        console.error("Failed loading item image", item, error);
+      }
+    }
+
+    document.querySelectorAll("img[data-item]").forEach((img) => {
+      img.loading = "lazy";
+      img.referrerPolicy = "no-referrer";
+      setItemImage(img);
+    });
+  </script>
+
+  <style>
+    .recipe-card {
+      border: 1px solid rgb(55, 65, 81);
+      background: rgba(17, 24, 39, 0.55);
+      border-radius: 0.85rem;
+      padding: 1.25rem;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+
+    .result {
+      color: rgb(156, 163, 175);
+      margin-top: 0.25rem;
+      font-size: 0.9rem;
+    }
+
+    .crafting-layout {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .bench-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.4rem;
+      background: linear-gradient(135deg, #5b3a24, #3b2517);
+      border: 3px solid #2a1a11;
+      border-radius: 0.7rem;
+      padding: 0.55rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      width: min(100%, 280px);
+    }
+
+    .slot,
+    .output-slot {
+      position: relative;
+      min-height: 78px;
+      background: linear-gradient(180deg, #1f2937, #111827);
+      border: 1px solid #4b5563;
+      border-radius: 0.45rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0.3rem;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .slot img,
+    .output-slot img {
+      width: 36px;
+      height: 36px;
+      image-rendering: pixelated;
+      margin-bottom: 0.2rem;
+    }
+
+    .slot span,
+    .output-slot span {
+      font-size: 0.6rem;
+      line-height: 1.05;
+      color: #d1d5db;
+      letter-spacing: 0.01em;
+    }
+
+    .output-slot {
+      width: 106px;
+      min-height: 106px;
+      border-color: #7c3aed;
+      background: linear-gradient(180deg, rgba(124,58,237,0.22), rgba(17,24,39,0.92));
+    }
+
+    .arrow {
+      font-size: 1.35rem;
+      color: #a78bfa;
+      font-weight: 700;
+      margin-inline: 0.25rem;
+    }
+
+    .enchanted::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(59,130,246,0.2));
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    .note {
+      color: #9ca3af;
+      font-size: 0.78rem;
+      margin-top: 0.7rem;
+    }
+  </style>
+</body>
+</html>
