@@ -1,9 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+const { get, put } = require('@vercel/blob');
 
 const runtimeDbPath = process.env.DB_PATH || path.join(__dirname, 'lastbreath-data.json');
 const DB_PATH = path.resolve(runtimeDbPath);
 const DB_BACKUP_PATH = `${DB_PATH}.bak`;
+
+
+const BLOB_PATHNAME = process.env.BLOB_DB_PATHNAME || 'player-data/lastbreath-data.json';
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+const BLOB_SYNC_ENABLED = Boolean(BLOB_TOKEN);
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
@@ -24,7 +30,62 @@ class Database {
     this.usernameLookupCache = new Map();
     this.load();
     this.refreshDerivedStats();
+    this.ready = this.hydrateFromBlob();
     console.log(`Connected to JSON database at ${DB_PATH}`);
+  }
+
+  async hydrateFromBlob() {
+    if (!BLOB_SYNC_ENABLED) {
+      return;
+    }
+
+    try {
+      const blobResponse = await get(BLOB_PATHNAME, {
+        access: 'private',
+        useCache: false,
+        token: BLOB_TOKEN
+      });
+
+      if (!blobResponse || blobResponse.statusCode !== 200 || !blobResponse.stream) {
+        return;
+      }
+
+      const blobText = await new Response(blobResponse.stream).text();
+      if (!blobText.trim()) {
+        return;
+      }
+
+      const parsed = JSON.parse(blobText);
+      this.state = this.buildStateFromParsed(parsed);
+      this.refreshDerivedStats();
+      this.persist(false);
+      console.log(`Hydrated JSON database from Vercel Blob path: ${BLOB_PATHNAME}`);
+    } catch (error) {
+      if (error?.name === 'BlobNotFoundError') {
+        console.log(`No Blob dataset found at ${BLOB_PATHNAME}. Continuing with local JSON state.`);
+      } else {
+        console.warn('Failed to hydrate database from Vercel Blob:', error?.message || error);
+      }
+    }
+  }
+
+  async syncStateToBlob(serializedState) {
+    if (!BLOB_SYNC_ENABLED) {
+      return;
+    }
+
+    try {
+      const blob = await put(BLOB_PATHNAME, serializedState, {
+        access: 'private',
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: 'application/json',
+        token: BLOB_TOKEN
+      });
+      this.lastBlobUrl = blob.url;
+    } catch (error) {
+      console.warn('Failed syncing JSON database to Vercel Blob:', error?.message || error);
+    }
   }
 
   async resolveUsernameFromUUID(uuid) {
@@ -163,7 +224,7 @@ class Database {
     };
   }
 
-  persist() {
+  persist(syncBlob = true) {
     this.state.server_stats.updated_at = new Date().toISOString();
     const serialized = JSON.stringify(this.state, null, 2);
     const tempPath = `${DB_PATH}.tmp`;
@@ -171,6 +232,10 @@ class Database {
     fs.writeFileSync(tempPath, serialized, 'utf8');
     fs.renameSync(tempPath, DB_PATH);
     fs.writeFileSync(DB_BACKUP_PATH, serialized, 'utf8');
+
+    if (syncBlob) {
+      void this.syncStateToBlob(serialized);
+    }
   }
 
   updateOnlineCount() {
