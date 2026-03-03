@@ -265,8 +265,11 @@ const handlePluginEvent = async (req, res) => {
       });
     } else if (event === 'bulk_stats') {
       if (!Array.isArray(players)) return res.status(400).json({ error: 'players[] required for bulk_stats' });
-      const updated = await db.upsertAllPlayerStats(players);
-      return res.json({ success: true, message: 'bulk_stats event processed', updated });
+      const result = await db.upsertAllPlayerStats(players);
+      if (result.failed > 0) {
+        console.warn(`bulk_stats completed with partial failures: ${result.failed}/${players.length}`);
+      }
+      return res.json({ success: true, message: 'bulk_stats event processed', ...result });
     } else {
       return res.status(400).json({
         error: 'Invalid event value',
@@ -388,8 +391,11 @@ app.post('/api/players/bulk', authenticateApiKey, async (req, res) => {
       return res.status(400).json({ error: 'players[] is required' });
     }
 
-    const updated = await db.upsertAllPlayerStats(players);
-    return res.json({ success: true, updated });
+    const result = await db.upsertAllPlayerStats(players);
+    if (result.failed > 0) {
+      console.warn(`bulk player sync completed with partial failures: ${result.failed}/${players.length}`);
+    }
+    return res.json({ success: true, ...result });
   } catch (error) {
     console.error('Error bulk syncing players:', error);
     return res.status(500).json({ error: 'Failed to bulk sync players' });

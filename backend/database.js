@@ -254,12 +254,32 @@ class Database {
     return Promise.resolve(existing);
   }
 
-  upsertAllPlayerStats(players = []) {
-    if (!Array.isArray(players)) return Promise.resolve(0);
-    players.forEach((player) => {
-      this.upsertFullPlayerStats(player);
-    });
-    return Promise.resolve(players.length);
+  async upsertAllPlayerStats(players = []) {
+    if (!Array.isArray(players)) {
+      return { updated: 0, failed: 0, errors: [] };
+    }
+
+    let updated = 0;
+    const errors = [];
+
+    for (const [index, player] of players.entries()) {
+      try {
+        await this.upsertFullPlayerStats(player);
+        updated += 1;
+      } catch (error) {
+        errors.push({
+          index,
+          uuid: player?.uuid ?? null,
+          reason: error?.message || 'Unknown error'
+        });
+      }
+    }
+
+    return {
+      updated,
+      failed: errors.length,
+      errors
+    };
   }
 
   recordDeath(uuid) {
