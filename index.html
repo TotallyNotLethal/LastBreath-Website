@@ -780,14 +780,60 @@
             }
         }
 
-        async function fetchLeaderboard() {
+        function buildRankedPlayersFromRoster(players, metric) {
+            const safePlayers = Array.isArray(players) ? players : [];
+            const metricExtractors = {
+                playtime: (player) => Number(player?.time_alive_ticks || 0),
+                mobs_killed: (player) => Number(player?.mobs_killed || 0),
+                player_kills: (player) => Number(player?.player_kills || 0),
+                deaths: (player) => Number(player?.deaths || 0),
+                revives: (player) => Number(player?.revives || 0),
+                blocks_mined: (player) => Number(player?.blocks_mined || 0),
+                blocks_placed: (player) => Number(player?.blocks_placed || 0),
+                rare_ores_mined: (player) => Number(player?.rare_ores_mined || 0),
+                crops_harvested: (player) => Number(player?.crops_harvested || 0),
+                fish_caught: (player) => Number(player?.fish_caught || 0),
+                asteroids_looted: (player) => Number(player?.asteroid_loots || 0)
+            };
+            const extractor = metricExtractors[metric] || metricExtractors.playtime;
+
+            return [...safePlayers]
+                .sort((a, b) => {
+                    const metricDiff = extractor(b) - extractor(a);
+                    if (metricDiff !== 0) return metricDiff;
+                    return Number(b?.time_alive_ticks || 0) - Number(a?.time_alive_ticks || 0);
+                })
+                .map((player, index) => ({
+                    ...player,
+                    rank: index + 1,
+                    metric,
+                    survival_days: Math.floor(Number(player?.survival_time || 0) / (24 * 60)),
+                    avatar: player?.avatar_url || `https://mc-heads.net/avatar/${encodeURIComponent(player?.username && player.username !== 'Unknown Player' ? player.username : player?.uuid || 'Steve')}/100`,
+                    leaderboard_value: extractor(player),
+                    status: player?.is_alive ? 'Alive' : 'Dead'
+                }));
+        }
+
+        async function fetchAllPlayerStats() {
             try {
-                const response = await fetch(`${API_BASE_URL}/leaderboard?limit=all&metric=${encodeURIComponent(activeMetric)}`);
-                const result = await parseApiResponse(response, 'Leaderboard');
+                const response = await fetch(`${API_BASE_URL}/players`);
+                const result = await parseApiResponse(response, 'Players');
                 if (result.success) {
                     updateAggregateStatsFromPlayers(result.data || []);
+                }
+            } catch (error) {
+                console.error('Failed to fetch player stats:', error);
+            }
+        }
+
+        async function fetchLeaderboard() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/players`);
+                const result = await parseApiResponse(response, 'Players');
+                if (result.success) {
+                    const rankedPlayers = buildRankedPlayersFromRoster(result.data || [], activeMetric);
                     currentLeaderboardPage = 1;
-                    renderLeaderboard(result.data);
+                    renderLeaderboard(rankedPlayers);
                 }
             } catch (error) {
                 console.error('Failed to fetch leaderboard:', error);
@@ -1022,11 +1068,13 @@
             }
 
             fetchServerStats();
+            fetchAllPlayerStats();
             fetchLeaderboard();
             connectStatsStream();
 
             setInterval(() => {
                 fetchServerStats();
+                fetchAllPlayerStats();
                 fetchLeaderboard();
             }, 30000);
 
