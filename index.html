@@ -737,6 +737,7 @@
 
             const wikiParams = new URLSearchParams({
                 username: player.username || 'Unknown',
+                uuid: player.uuid || '',
                 rank: String(player.rank || ''),
                 survival_days: String(player.survival_days || 0),
                 kills: String(player.kills || 0),
@@ -968,7 +969,7 @@
                         <td class="px-6 py-4 font-mono text-gray-300">${metricLabel}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 ${statusClass} text-xs rounded-full font-semibold">${player.status}</span>
-                            <a href="/wiki/player-profile.html?username=${encodeURIComponent(player.username || '')}&rank=${encodeURIComponent(player.rank || '')}&survival_days=${encodeURIComponent(player.survival_days || 0)}&kills=${encodeURIComponent(player.kills || 0)}&status=${encodeURIComponent(player.status || '')}&join_date=${encodeURIComponent(player.join_date || '2024')}&avatar=${encodeURIComponent(player.avatar || '')}" class="block mt-2 text-xs text-purple-300 hover:text-purple-200">Wiki page ↗</a>
+                            <a href="/wiki/player-profile.html?username=${encodeURIComponent(player.username || '')}&uuid=${encodeURIComponent(player.uuid || '')}&rank=${encodeURIComponent(player.rank || '')}&survival_days=${encodeURIComponent(player.survival_days || 0)}&kills=${encodeURIComponent(player.kills || 0)}&status=${encodeURIComponent(player.status || '')}&join_date=${encodeURIComponent(player.join_date || '2024')}&avatar=${encodeURIComponent(player.avatar || '')}" class="block mt-2 text-xs text-purple-300 hover:text-purple-200">Wiki page ↗</a>
                         </td>
                     </tr>
                 `;
