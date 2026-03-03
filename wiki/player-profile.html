@@ -7,36 +7,76 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-[#0f0f0f] text-gray-100">
-  <main class="max-w-4xl mx-auto px-6 py-12">
+  <main class="max-w-5xl mx-auto px-6 py-12">
     <a href="/index.html#leaderboard" class="text-purple-400 hover:text-purple-300 text-sm">← Back to leaderboard</a>
     <h1 class="text-4xl font-black mt-4">Player Wiki <span id="player-name" class="text-purple-400"></span></h1>
-    <p class="text-gray-400 mt-3">Generated from leaderboard selection. Share this link for player-specific wiki references.</p>
+    <p class="text-gray-400 mt-3">Live data from the server roster, including per-stat leaderboard rank and combined overall rank.</p>
 
     <section class="mt-8 rounded-xl border border-gray-700 bg-white/5 p-6">
       <div class="flex items-center gap-4">
         <img id="player-avatar" src="https://mc-heads.net/avatar/Steve/128" alt="Player avatar" class="w-20 h-20 rounded-lg border border-purple-500/40">
         <div>
           <p id="player-status" class="inline-flex px-3 py-1 rounded-full text-xs font-semibold bg-gray-800"></p>
-          <p class="text-gray-400 text-sm mt-2">This page updates from URL parameters so each leaderboard click can create a unique wiki page.</p>
+          <p class="text-gray-400 text-sm mt-2">Rankings compare this player against everyone in the current server dataset.</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 text-sm">
-        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Rank</p><p id="player-rank" class="font-mono text-lg">-</p></div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 text-sm">
+        <div class="rounded-lg bg-black/30 p-3 border border-yellow-500/40"><p class="text-gray-400">Overall Rank</p><p id="player-rank" class="font-mono text-lg text-yellow-300">-</p></div>
+        <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">#1 Finishes</p><p id="player-firsts" class="font-mono text-lg">0</p></div>
         <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Survival Days</p><p id="player-survival" class="font-mono text-lg text-green-400">0</p></div>
         <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Kills</p><p id="player-kills" class="font-mono text-lg">0</p></div>
         <div class="rounded-lg bg-black/30 p-3 border border-gray-700"><p class="text-gray-400">Join Date</p><p id="player-join-date" class="font-mono text-lg">-</p></div>
       </div>
     </section>
+
+    <section class="mt-6 rounded-xl border border-gray-700 bg-white/5 p-6">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-xl font-bold">All Stats + Leaderboard Rank</h2>
+        <p id="ranking-note" class="text-xs text-gray-400">Loading rankings...</p>
+      </div>
+      <div class="overflow-x-auto mt-4">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-gray-700">
+              <th class="py-2 pr-4">Stat</th>
+              <th class="py-2 pr-4">Value</th>
+              <th class="py-2 pr-4">Leaderboard Rank</th>
+            </tr>
+          </thead>
+          <tbody id="player-stat-rows" class="divide-y divide-gray-800">
+            <tr><td colspan="3" class="py-4 text-gray-500">Loading player stats…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 
   <script>
+    const API_BASE_URL = `${window.location.origin}/api`;
+    const METRICS = [
+      { key: 'playtime', label: 'Playtime (Days)', getValue: (p) => Math.floor(Number(p?.survival_time || 0) / (24 * 60)), sortValue: (p) => Number(p?.time_alive_ticks || 0), format: (v) => `${v.toLocaleString()} days` },
+      { key: 'kills', label: 'Kills', getValue: (p) => Number(p?.kills || 0), sortValue: (p) => Number(p?.kills || 0), format: (v) => v.toLocaleString() },
+      { key: 'mobs_killed', label: 'Mobs Killed', getValue: (p) => Number(p?.mobs_killed || 0), sortValue: (p) => Number(p?.mobs_killed || 0), format: (v) => v.toLocaleString() },
+      { key: 'player_kills', label: 'Player Kills', getValue: (p) => Number(p?.player_kills || 0), sortValue: (p) => Number(p?.player_kills || 0), format: (v) => v.toLocaleString() },
+      { key: 'deaths', label: 'Deaths', getValue: (p) => Number(p?.deaths || 0), sortValue: (p) => Number(p?.deaths || 0), format: (v) => v.toLocaleString() },
+      { key: 'revives', label: 'Revives', getValue: (p) => Number(p?.revives || 0), sortValue: (p) => Number(p?.revives || 0), format: (v) => v.toLocaleString() },
+      { key: 'blocks_mined', label: 'Blocks Mined', getValue: (p) => Number(p?.blocks_mined || 0), sortValue: (p) => Number(p?.blocks_mined || 0), format: (v) => v.toLocaleString() },
+      { key: 'blocks_placed', label: 'Blocks Placed', getValue: (p) => Number(p?.blocks_placed || 0), sortValue: (p) => Number(p?.blocks_placed || 0), format: (v) => v.toLocaleString() },
+      { key: 'rare_ores_mined', label: 'Rare Ores Mined', getValue: (p) => Number(p?.rare_ores_mined || 0), sortValue: (p) => Number(p?.rare_ores_mined || 0), format: (v) => v.toLocaleString() },
+      { key: 'crops_harvested', label: 'Crops Harvested', getValue: (p) => Number(p?.crops_harvested || 0), sortValue: (p) => Number(p?.crops_harvested || 0), format: (v) => v.toLocaleString() },
+      { key: 'fish_caught', label: 'Fish Caught', getValue: (p) => Number(p?.fish_caught || 0), sortValue: (p) => Number(p?.fish_caught || 0), format: (v) => v.toLocaleString() },
+      { key: 'asteroids_looted', label: 'Asteroids Looted', getValue: (p) => Number(p?.asteroid_loots || 0), sortValue: (p) => Number(p?.asteroid_loots || 0), format: (v) => v.toLocaleString() }
+    ];
+
     const params = new URLSearchParams(window.location.search);
     const playerName = params.get('username') || 'Unknown Survivor';
     const status = params.get('status') || 'Unknown';
+    const uuid = params.get('uuid') || '';
 
     document.getElementById('player-name').textContent = playerName;
     document.getElementById('player-rank').textContent = params.get('rank') ? `#${params.get('rank')}` : '-';
+    document.getElementById('player-firsts').textContent = '0';
     document.getElementById('player-survival').textContent = params.get('survival_days') || '0';
     document.getElementById('player-kills').textContent = params.get('kills') || '0';
     document.getElementById('player-join-date').textContent = params.get('join_date') || '-';
@@ -51,6 +91,134 @@
       document.getElementById('player-avatar').src = avatar;
       document.getElementById('player-avatar').alt = `${playerName} avatar`;
     }
+
+    function rankPlayers(players, metric) {
+      const ranked = [...players]
+        .sort((a, b) => {
+          const diff = metric.sortValue(b) - metric.sortValue(a);
+          if (diff !== 0) return diff;
+          return Number(b?.time_alive_ticks || 0) - Number(a?.time_alive_ticks || 0);
+        });
+
+      const rankByUuid = new Map();
+      let lastScore = null;
+      let lastRank = 0;
+
+      ranked.forEach((player, index) => {
+        const score = metric.sortValue(player);
+        const rank = score === lastScore ? lastRank : index + 1;
+        rankByUuid.set(player.uuid, rank);
+        lastScore = score;
+        lastRank = rank;
+      });
+
+      return rankByUuid;
+    }
+
+    function rankOverall(players, metricRankings) {
+      const placementBuckets = new Map();
+      const totalRankScore = new Map();
+
+      players.forEach((player) => {
+        placementBuckets.set(player.uuid, Array(players.length).fill(0));
+        totalRankScore.set(player.uuid, 0);
+      });
+
+      metricRankings.forEach((ranking) => {
+        players.forEach((player) => {
+          const rank = ranking.get(player.uuid) || players.length;
+          const bucketIndex = Math.max(0, Math.min(players.length - 1, rank - 1));
+          placementBuckets.get(player.uuid)[bucketIndex] += 1;
+          totalRankScore.set(player.uuid, totalRankScore.get(player.uuid) + rank);
+        });
+      });
+
+      return [...players]
+        .sort((a, b) => {
+          const aBuckets = placementBuckets.get(a.uuid);
+          const bBuckets = placementBuckets.get(b.uuid);
+          for (let i = 0; i < aBuckets.length; i += 1) {
+            if (aBuckets[i] !== bBuckets[i]) return bBuckets[i] - aBuckets[i];
+          }
+
+          const scoreDiff = totalRankScore.get(a.uuid) - totalRankScore.get(b.uuid);
+          if (scoreDiff !== 0) return scoreDiff;
+
+          return Number(b?.time_alive_ticks || 0) - Number(a?.time_alive_ticks || 0);
+        })
+        .map((player, index) => ({
+          ...player,
+          overall_rank: index + 1,
+          first_place_finishes: placementBuckets.get(player.uuid)[0] || 0
+        }));
+    }
+
+    async function loadLiveRankings() {
+      const rankingNote = document.getElementById('ranking-note');
+      const tbody = document.getElementById('player-stat-rows');
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/players`);
+        const result = await response.json();
+
+        if (!result?.success || !Array.isArray(result?.data)) {
+          throw new Error('Roster response was not successful');
+        }
+
+        const roster = result.data;
+        const player = roster.find((entry) => uuid && entry?.uuid === uuid)
+          || roster.find((entry) => String(entry?.username || '').toLowerCase() === playerName.toLowerCase());
+
+        if (!player) {
+          rankingNote.textContent = 'Player not found in live dataset. Showing URL fallback values only.';
+          return;
+        }
+
+        const metricRankings = METRICS.map((metric) => ({
+          metric,
+          ranking: rankPlayers(roster, metric)
+        }));
+
+        const overallRankedPlayers = rankOverall(roster, metricRankings.map((entry) => entry.ranking));
+        const overallProfile = overallRankedPlayers.find((entry) => entry.uuid === player.uuid);
+
+        document.getElementById('player-name').textContent = player.username || playerName;
+        document.getElementById('player-rank').textContent = overallProfile ? `#${overallProfile.overall_rank}` : '-';
+        document.getElementById('player-firsts').textContent = (overallProfile?.first_place_finishes || 0).toLocaleString();
+        document.getElementById('player-survival').textContent = Math.floor(Number(player?.survival_time || 0) / (24 * 60)).toLocaleString();
+        document.getElementById('player-kills').textContent = Number(player?.kills || 0).toLocaleString();
+        document.getElementById('player-join-date').textContent = player?.join_date || params.get('join_date') || '-';
+
+        const liveStatus = player?.is_alive ? 'Alive' : 'Dead';
+        statusEl.textContent = liveStatus;
+        statusEl.className = `inline-flex px-3 py-1 rounded-full text-xs font-semibold ${player?.is_alive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`;
+
+        if (player?.avatar_url) {
+          document.getElementById('player-avatar').src = player.avatar_url;
+          document.getElementById('player-avatar').alt = `${player.username || playerName} avatar`;
+        }
+
+        tbody.innerHTML = metricRankings.map(({ metric, ranking }) => {
+          const value = metric.getValue(player);
+          const rank = ranking.get(player.uuid) || '-';
+          return `
+            <tr>
+              <td class="py-3 pr-4 text-gray-200">${metric.label}</td>
+              <td class="py-3 pr-4 font-mono text-green-300">${metric.format(value)}</td>
+              <td class="py-3 pr-4 font-mono text-yellow-300">#${rank}</td>
+            </tr>
+          `;
+        }).join('');
+
+        rankingNote.textContent = `Overall rank is decided by most 1st-place finishes, then 2nd-place finishes, etc. (${METRICS.length} tracked stats).`;
+      } catch (error) {
+        console.error('Failed to load live rankings:', error);
+        rankingNote.textContent = 'Could not load live rankings. Showing URL fallback values only.';
+        tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-red-300">Unable to fetch server data right now.</td></tr>';
+      }
+    }
+
+    loadLiveRankings();
   </script>
 </body>
 </html>

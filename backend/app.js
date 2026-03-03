@@ -124,7 +124,13 @@ app.get('/api/leaderboard', async (req, res) => {
     const limit = requestedLimit === 'all' ? Number.MAX_SAFE_INTEGER : (parseInt(requestedLimit, 10) || 5);
     const requestedMetric = String(req.query.metric || 'playtime').toLowerCase();
     const metric = LEADERBOARD_METRICS.includes(requestedMetric) ? requestedMetric : 'playtime';
-    const players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric, { requireAws: true });
+    let players;
+    try {
+      players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric, { requireAws: true });
+    } catch (awsError) {
+      console.warn('AWS leaderboard read failed, using local cache fallback:', awsError?.message || awsError);
+      players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric);
+    }
 
     // Add rank to each player from the full roster in AWS-backed storage.
     const rankedPlayers = players.map((player, index) => ({
@@ -154,7 +160,14 @@ app.get('/api/leaderboard', async (req, res) => {
 // Return every known player so the frontend can always render full historical lists.
 app.get('/api/players', async (req, res) => {
   try {
-    const players = await db.getAllPlayers({ requireAws: true });
+    let players;
+    try {
+      players = await db.getAllPlayers({ requireAws: true });
+    } catch (awsError) {
+      console.warn('AWS players read failed, using local cache fallback:', awsError?.message || awsError);
+      players = await db.getAllPlayers();
+    }
+
     res.json({
       success: true,
       total_players: players.length,
