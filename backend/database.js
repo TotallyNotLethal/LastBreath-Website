@@ -8,7 +8,9 @@ const DB_BACKUP_PATH = `${DB_PATH}.bak`;
 
 
 const BLOB_PATHNAME = process.env.BLOB_DB_PATHNAME || 'player-data/lastbreath-data.json';
+const BLOB_READ_URL = process.env.BLOB_DB_READ_URL || '';
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+const BLOB_READ_ENABLED = Boolean(BLOB_TOKEN || BLOB_READ_URL);
 const BLOB_SYNC_ENABLED = Boolean(BLOB_TOKEN);
 
 let fsPersistenceAvailable = true;
@@ -42,23 +44,38 @@ class Database {
     console.log(`Connected to JSON database at ${DB_PATH}`);
   }
 
-  async hydrateFromBlob() {
-    if (!BLOB_SYNC_ENABLED) {
-      return;
+  async hydrateFromBlob(options = {}) {
+    const { requireBlob = false } = options;
+
+    if (!BLOB_READ_ENABLED) {
+      if (requireBlob) {
+        throw new Error('Blob read source is not configured');
+      }
+      return false;
     }
 
     try {
-      const blobResponse = await get(BLOB_PATHNAME, {
-        access: 'private',
-        token: BLOB_TOKEN
-      });
+      let downloadUrl = BLOB_READ_URL || '';
 
-      if (!blobResponse?.downloadUrl) {
-        return;
+      if (!downloadUrl) {
+        const blobResponse = await get(BLOB_PATHNAME, {
+          access: 'private',
+          token: BLOB_TOKEN
+        });
+
+        if (!blobResponse?.downloadUrl) {
+          if (requireBlob) {
+            throw new Error(`Blob dataset missing at ${BLOB_PATHNAME}`);
+          }
+          return false;
+        }
+
+        downloadUrl = blobResponse.downloadUrl;
       }
 
-      const downloadResponse = await fetch(blobResponse.downloadUrl, {
-        cache: 'no-store'
+      const downloadResponse = await fetch(downloadUrl, {
+        cache: 'no-store',
+        headers: BLOB_TOKEN ? { Authorization: `Bearer ${BLOB_TOKEN}` } : undefined
       });
 
       if (!downloadResponse.ok) {
@@ -67,7 +84,10 @@ class Database {
 
       const blobText = await downloadResponse.text();
       if (!blobText.trim()) {
-        return;
+        if (requireBlob) {
+          throw new Error(`Blob dataset is empty at ${BLOB_PATHNAME}`);
+        }
+        return false;
       }
 
       const parsed = JSON.parse(blobText);
@@ -75,13 +95,21 @@ class Database {
       this.refreshDerivedStats();
       this.lastBlobHydrationAt = Date.now();
       this.persist(false);
-      console.log(`Hydrated JSON database from Vercel Blob path: ${BLOB_PATHNAME}`);
+      console.log(`Hydrated JSON database from Vercel Blob path: ${downloadUrl || BLOB_PATHNAME}`);
+      return true;
     } catch (error) {
       if (error?.name === 'BlobNotFoundError') {
+        if (requireBlob) {
+          throw new Error(`Blob dataset missing at ${BLOB_PATHNAME}`);
+        }
         console.log(`No Blob dataset found at ${BLOB_PATHNAME}. Continuing with local JSON state.`);
       } else {
+        if (requireBlob) {
+          throw error;
+        }
         console.warn('Failed to hydrate database from Vercel Blob:', error?.message || error);
       }
+      return false;
     }
   }
 
@@ -104,12 +132,9 @@ class Database {
     }
   }
 
-  async ensureLatestBlobState() {
-    if (!BLOB_SYNC_ENABLED) {
-      return;
-    }
-
-    await this.hydrateFromBlob();
+  async ensureLatestBlobState(options = {}) {
+    const { requireBlob = false } = options;
+    await this.hydrateFromBlob({ requireBlob });
   }
 
   async resolveUsernameFromUUID(uuid) {
@@ -279,8 +304,8 @@ class Database {
     this.state.server_stats.online_players = openSessions.size;
   }
 
-  async getTopPlayers(limit = 10, metric = 'playtime') {
-    await this.ensureLatestBlobState();
+  async getTopPlayers(limit = 10, metric = 'playtime', options = {}) {
+    await this.ensureLatestBlobState(options);
 
     const metricExtractors = {
       playtime: (p) => Number(p.time_alive_ticks || 0),
@@ -339,8 +364,8 @@ class Database {
     return rows;
   }
 
-  async getAllPlayers() {
-    await this.ensureLatestBlobState();
+  async getAllPlayers(options = {}) {
+    await this.ensureLatestBlobState(options);
 
     const rows = [...this.state.players]
       .sort((a, b) => {
@@ -545,8 +570,8 @@ class Database {
     await this.persist();
   }
 
-  async getServerStats() {
-    await this.ensureLatestBlobState();
+  async getServerStats(options = {}) {
+    await this.ensureLatestBlobState(options);
 
     return {
       total_players: this.state.players.length,

@@ -45,7 +45,8 @@ API will run on `http://localhost:3000` locally. Production is hosted at `https:
 
 Leaderboard and player/server state are sourced from Vercel Blob.
 
-- Configure `BLOB_READ_WRITE_TOKEN` in the API environment.
+- Configure `BLOB_READ_WRITE_TOKEN` in the API environment for write + read access.
+- Optionally set `BLOB_DB_READ_URL` to force reads from a specific Blob JSON URL on every leaderboard/player fetch.
 - Plugin POST endpoints are enabled and server writes are persisted to Blob (`player-data/lastbreath-data.json` by default).
 - Frontend leaderboard reads are served from Blob-hydrated state.
 
