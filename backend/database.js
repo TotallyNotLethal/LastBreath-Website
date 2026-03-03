@@ -35,6 +35,7 @@ class Database {
     };
 
     this.usernameLookupCache = new Map();
+    this.lastBlobHydrationAt = 0;
     this.load();
     this.refreshDerivedStats();
     this.ready = this.hydrateFromBlob();
@@ -65,6 +66,7 @@ class Database {
       const parsed = JSON.parse(blobText);
       this.state = this.buildStateFromParsed(parsed);
       this.refreshDerivedStats();
+      this.lastBlobHydrationAt = Date.now();
       this.persist(false);
       console.log(`Hydrated JSON database from Vercel Blob path: ${BLOB_PATHNAME}`);
     } catch (error) {
@@ -93,6 +95,14 @@ class Database {
     } catch (error) {
       console.warn('Failed syncing JSON database to Vercel Blob:', error?.message || error);
     }
+  }
+
+  async ensureLatestBlobState() {
+    if (!BLOB_SYNC_ENABLED) {
+      return;
+    }
+
+    await this.hydrateFromBlob();
   }
 
   async resolveUsernameFromUUID(uuid) {
@@ -231,7 +241,7 @@ class Database {
     };
   }
 
-  persist(syncBlob = true) {
+  async persist(syncBlob = true) {
     this.state.server_stats.updated_at = new Date().toISOString();
     const serialized = JSON.stringify(this.state, null, 2);
     const tempPath = `${DB_PATH}.tmp`;
@@ -248,7 +258,7 @@ class Database {
     }
 
     if (syncBlob) {
-      void this.syncStateToBlob(serialized);
+      await this.syncStateToBlob(serialized);
     }
   }
 
@@ -262,7 +272,9 @@ class Database {
     this.state.server_stats.online_players = openSessions.size;
   }
 
-  getTopPlayers(limit = 10, metric = 'playtime') {
+  async getTopPlayers(limit = 10, metric = 'playtime') {
+    await this.ensureLatestBlobState();
+
     const metricExtractors = {
       playtime: (p) => Number(p.time_alive_ticks || 0),
       mobs_killed: (p) => Number(p.mobs_killed || 0),
@@ -317,10 +329,12 @@ class Database {
         status: p.is_alive ? 'Alive' : 'Dead'
       }));
 
-    return Promise.resolve(rows);
+    return rows;
   }
 
-  getAllPlayers() {
+  async getAllPlayers() {
+    await this.ensureLatestBlobState();
+
     const rows = [...this.state.players]
       .sort((a, b) => {
         const aTime = new Date(a.created_at || 0).getTime();
@@ -329,55 +343,56 @@ class Database {
       })
       .map((player) => this.normalizePlayer(player));
 
-    return Promise.resolve(rows);
+    return rows;
   }
 
-  getPlayerByUUID(uuid) {
-    return Promise.resolve(this.state.players.find((p) => p.uuid === uuid));
+  async getPlayerByUUID(uuid) {
+    await this.ensureLatestBlobState();
+    return this.state.players.find((p) => p.uuid === uuid);
   }
 
-  getPlayerByUsername(username) {
+  async getPlayerByUsername(username) {
+    await this.ensureLatestBlobState();
     const lower = String(username).toLowerCase();
-    return Promise.resolve(this.state.players.find((p) => String(p.username).toLowerCase() === lower));
+    return this.state.players.find((p) => String(p.username).toLowerCase() === lower);
   }
 
-  createPlayer(uuid, username) {
+  async createPlayer(uuid, username) {
     const existing = this.state.players.find((p) => p.uuid === uuid);
-    if (existing) return Promise.resolve(existing.id);
+    if (existing) return existing.id;
 
     const player = this.buildDefaultPlayer(uuid, username);
 
     this.state.players.push(player);
-    this.persist();
-    return Promise.resolve(player.id);
+    await this.persist();
+    return player.id;
   }
 
-  upsertPlayer(uuid, username) {
+  async upsertPlayer(uuid, username) {
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) {
       existing.username = username;
       existing.last_login = new Date().toISOString();
       existing.is_alive = Number(existing.deaths || 0) > 0 ? 0 : 1;
-      this.persist();
-      return Promise.resolve(existing.id);
+      await this.persist();
+      return existing.id;
     }
-    return this.createPlayer(uuid, username);
+    return await this.createPlayer(uuid, username);
   }
 
-  updatePlayerStats(uuid, survivalTime = 0, kills = 0) {
+  async updatePlayerStats(uuid, survivalTime = 0, kills = 0) {
     const existing = this.state.players.find((p) => p.uuid === uuid);
-    if (!existing) return Promise.resolve();
+    if (!existing) return;
 
     existing.survival_time = Number(survivalTime) || 0;
     existing.kills = Number(kills) || 0;
     existing.last_login = new Date().toISOString();
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
   async upsertFullPlayerStats(payload = {}) {
     const uuid = payload.uuid;
-    if (!uuid) return Promise.resolve();
+    if (!uuid) return;
 
     let existing = this.state.players.find((p) => p.uuid === uuid);
     if (!existing) {
@@ -426,8 +441,8 @@ class Database {
 
     this.refreshDerivedStats();
     existing.last_login = new Date().toISOString();
-    this.persist();
-    return Promise.resolve(existing);
+    await this.persist();
+    return existing;
   }
 
   async upsertAllPlayerStats(players = []) {
@@ -458,18 +473,17 @@ class Database {
     };
   }
 
-  recordDeath(uuid) {
+  async recordDeath(uuid) {
     const existing = this.state.players.find((p) => p.uuid === uuid);
-    if (!existing) return Promise.resolve();
+    if (!existing) return;
 
     existing.is_alive = 0;
     existing.deaths += 1;
     this.state.server_stats.total_deaths += 1;
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  recordLogin(uuid) {
+  async recordLogin(uuid) {
     this.state.sessions.push({
       id: this.state.sessions.length + 1,
       player_uuid: uuid,
@@ -478,11 +492,10 @@ class Database {
     });
 
     this.updateOnlineCount();
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  recordLogout(uuid) {
+  async recordLogout(uuid) {
     const session = [...this.state.sessions].reverse().find((s) => s.player_uuid === uuid && !s.logout_time);
     if (session) {
       session.logout_time = new Date().toISOString();
@@ -497,51 +510,51 @@ class Database {
     }
 
     this.updateOnlineCount();
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  incrementDragonSlayer() {
+  async incrementDragonSlayer() {
     this.state.server_stats.dragon_slayers += 1;
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  recordDragonSlay(uuid) {
+  async recordDragonSlay(uuid) {
     const player = this.state.players.find((p) => p.uuid === uuid);
     if (player) {
       player.kills += 1;
     }
 
     this.state.server_stats.dragon_slayers += 1;
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  getServerStats() {
-    return Promise.resolve({
+  async getServerStats() {
+    await this.ensureLatestBlobState();
+
+    return {
       total_players: this.state.players.length,
       total_deaths: this.state.server_stats.total_deaths,
       online_players: this.state.server_stats.online_players,
       dragon_slayers: this.state.server_stats.dragon_slayers,
       server_uptime: this.state.server_stats.server_uptime,
       updated_at: this.state.server_stats.updated_at
-    });
+    };
   }
 
-  updateUptime(hours) {
+  async updateUptime(hours) {
     this.state.server_stats.server_uptime += Number(hours) || 0;
-    this.persist();
-    return Promise.resolve();
+    await this.persist();
   }
 
-  searchPlayers(query) {
+  async searchPlayers(query) {
+    await this.ensureLatestBlobState();
+
     const q = String(query).toLowerCase();
     const rows = this.state.players
       .filter((p) => String(p.username).toLowerCase().includes(q))
       .slice(0, 10);
 
-    return Promise.resolve(rows);
+    return rows;
   }
 }
 
