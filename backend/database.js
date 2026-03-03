@@ -1,10 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-const runtimeDbPath = process.env.DB_PATH
-  || (isServerlessRuntime ? '/tmp/lastbreath-data.json' : path.join(__dirname, 'lastbreath-data.json'));
+const runtimeDbPath = process.env.DB_PATH || path.join(__dirname, 'lastbreath-data.json');
 const DB_PATH = path.resolve(runtimeDbPath);
+const DB_BACKUP_PATH = `${DB_PATH}.bak`;
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
@@ -124,28 +123,54 @@ class Database {
       }
 
       const parsed = JSON.parse(raw);
-      this.state = {
-        players: Array.isArray(parsed.players) ? parsed.players.map((player) => this.normalizePlayer(player)) : [],
-        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
-        server_stats: {
-          total_deaths: parsed.server_stats?.total_deaths || 0,
-          online_players: parsed.server_stats?.online_players || 0,
-          dragon_slayers: parsed.server_stats?.dragon_slayers || 0,
-          server_uptime: parsed.server_stats?.server_uptime || 0,
-          updated_at: parsed.server_stats?.updated_at || new Date().toISOString()
-        }
-      };
+      this.state = this.buildStateFromParsed(parsed);
 
       this.refreshDerivedStats();
     } catch (error) {
-      console.error('Error loading JSON database, starting fresh:', error);
+      console.error('Error loading primary JSON database, attempting backup restore:', error);
+
+      try {
+        if (fs.existsSync(DB_BACKUP_PATH)) {
+          const backupRaw = fs.readFileSync(DB_BACKUP_PATH, 'utf8');
+          if (backupRaw.trim()) {
+            const backupParsed = JSON.parse(backupRaw);
+            this.state = this.buildStateFromParsed(backupParsed);
+            this.refreshDerivedStats();
+            this.persist();
+            console.log(`Recovered JSON database from backup at ${DB_BACKUP_PATH}`);
+            return;
+          }
+        }
+      } catch (backupError) {
+        console.error('Backup restore failed, starting fresh state:', backupError);
+      }
+
       this.persist();
     }
   }
 
+  buildStateFromParsed(parsed = {}) {
+    return {
+      players: Array.isArray(parsed.players) ? parsed.players.map((player) => this.normalizePlayer(player)) : [],
+      sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+      server_stats: {
+        total_deaths: parsed.server_stats?.total_deaths || 0,
+        online_players: parsed.server_stats?.online_players || 0,
+        dragon_slayers: parsed.server_stats?.dragon_slayers || 0,
+        server_uptime: parsed.server_stats?.server_uptime || 0,
+        updated_at: parsed.server_stats?.updated_at || new Date().toISOString()
+      }
+    };
+  }
+
   persist() {
     this.state.server_stats.updated_at = new Date().toISOString();
-    fs.writeFileSync(DB_PATH, JSON.stringify(this.state, null, 2));
+    const serialized = JSON.stringify(this.state, null, 2);
+    const tempPath = `${DB_PATH}.tmp`;
+
+    fs.writeFileSync(tempPath, serialized, 'utf8');
+    fs.renameSync(tempPath, DB_PATH);
+    fs.writeFileSync(DB_BACKUP_PATH, serialized, 'utf8');
   }
 
   updateOnlineCount() {
