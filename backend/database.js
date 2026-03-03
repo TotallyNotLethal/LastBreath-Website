@@ -50,15 +50,22 @@ class Database {
     try {
       const blobResponse = await get(BLOB_PATHNAME, {
         access: 'private',
-        useCache: false,
         token: BLOB_TOKEN
       });
 
-      if (!blobResponse || blobResponse.statusCode !== 200 || !blobResponse.stream) {
+      if (!blobResponse?.downloadUrl) {
         return;
       }
 
-      const blobText = await new Response(blobResponse.stream).text();
+      const downloadResponse = await fetch(blobResponse.downloadUrl, {
+        cache: 'no-store'
+      });
+
+      if (!downloadResponse.ok) {
+        throw new Error(`Blob download failed with status ${downloadResponse.status}`);
+      }
+
+      const blobText = await downloadResponse.text();
       if (!blobText.trim()) {
         return;
       }
@@ -358,6 +365,7 @@ class Database {
   }
 
   async createPlayer(uuid, username) {
+    await this.ensureLatestBlobState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) return existing.id;
 
@@ -369,6 +377,7 @@ class Database {
   }
 
   async upsertPlayer(uuid, username) {
+    await this.ensureLatestBlobState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) {
       existing.username = username;
@@ -381,6 +390,7 @@ class Database {
   }
 
   async updatePlayerStats(uuid, survivalTime = 0, kills = 0) {
+    await this.ensureLatestBlobState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (!existing) return;
 
@@ -391,6 +401,7 @@ class Database {
   }
 
   async upsertFullPlayerStats(payload = {}) {
+    await this.ensureLatestBlobState();
     const uuid = payload.uuid;
     if (!uuid) return;
 
@@ -446,6 +457,7 @@ class Database {
   }
 
   async upsertAllPlayerStats(players = []) {
+    await this.ensureLatestBlobState();
     if (!Array.isArray(players)) {
       return { updated: 0, failed: 0, errors: [] };
     }
@@ -474,6 +486,7 @@ class Database {
   }
 
   async recordDeath(uuid) {
+    await this.ensureLatestBlobState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (!existing) return;
 
@@ -484,6 +497,7 @@ class Database {
   }
 
   async recordLogin(uuid) {
+    await this.ensureLatestBlobState();
     this.state.sessions.push({
       id: this.state.sessions.length + 1,
       player_uuid: uuid,
@@ -496,6 +510,7 @@ class Database {
   }
 
   async recordLogout(uuid) {
+    await this.ensureLatestBlobState();
     const session = [...this.state.sessions].reverse().find((s) => s.player_uuid === uuid && !s.logout_time);
     if (session) {
       session.logout_time = new Date().toISOString();
@@ -514,11 +529,13 @@ class Database {
   }
 
   async incrementDragonSlayer() {
+    await this.ensureLatestBlobState();
     this.state.server_stats.dragon_slayers += 1;
     await this.persist();
   }
 
   async recordDragonSlay(uuid) {
+    await this.ensureLatestBlobState();
     const player = this.state.players.find((p) => p.uuid === uuid);
     if (player) {
       player.kills += 1;
@@ -542,6 +559,7 @@ class Database {
   }
 
   async updateUptime(hours) {
+    await this.ensureLatestBlobState();
     this.state.server_stats.server_uptime += Number(hours) || 0;
     await this.persist();
   }

@@ -40,9 +40,20 @@ API will run on `http://localhost:3000` locally. Production is hosted at `https:
 
 ---
 
+
+## Blob source of truth
+
+Leaderboard and player/server state are sourced from Vercel Blob.
+
+- Configure `BLOB_READ_WRITE_TOKEN` in the API environment.
+- Plugin POST endpoints are enabled and server writes are persisted to Blob (`player-data/lastbreath-data.json` by default).
+- Frontend leaderboard reads are served from Blob-hydrated state.
+
+---
+
 ## API Authentication (Plugin)
 
-For quick testing, the API key is currently hardcoded in `backend/app.js`:
+For quick testing, the API key defaults in `backend/app.js` (override with `LASTBREATH_API_KEY`):
 
 - `LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME`
 
