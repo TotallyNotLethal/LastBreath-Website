@@ -1,301 +1,227 @@
-const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, 'lastbreath.db');
+const isServerlessRuntime = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const runtimeDbPath = process.env.DB_PATH
+  || (isServerlessRuntime ? '/tmp/lastbreath-data.json' : path.join(__dirname, 'lastbreath-data.json'));
+const DB_PATH = path.resolve(runtimeDbPath);
+
+fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
 class Database {
   constructor() {
-    this.db = new sqlite3.Database(DB_PATH, (err) => {
-      if (err) {
-        console.error('Error opening database:', err);
-      } else {
-        console.log('Connected to SQLite database');
-        this.initializeTables();
+    this.state = {
+      players: [],
+      sessions: [],
+      server_stats: {
+        total_deaths: 0,
+        online_players: 0,
+        dragon_slayers: 0,
+        server_uptime: 0,
+        updated_at: new Date().toISOString()
       }
-    });
+    };
+
+    this.load();
+    console.log(`Connected to JSON database at ${DB_PATH}`);
   }
 
-  initializeTables() {
-    this.db.serialize(() => {
-      // Players table
-      this.db.run(`CREATE TABLE IF NOT EXISTS players (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        uuid TEXT UNIQUE NOT NULL,
-        username TEXT NOT NULL,
-        survival_time INTEGER DEFAULT 0,
-        kills INTEGER DEFAULT 0,
-        deaths INTEGER DEFAULT 0,
-        is_alive BOOLEAN DEFAULT 1,
-        last_login DATETIME DEFAULT CURRENT_TIMESTAMP,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        avatar_url TEXT,
-        join_date DATE
-      )`);
+  load() {
+    try {
+      if (!fs.existsSync(DB_PATH)) {
+        this.persist();
+        return;
+      }
 
-      // Sessions table for tracking online time
-      this.db.run(`CREATE TABLE IF NOT EXISTS sessions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        player_uuid TEXT,
-        login_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-        logout_time DATETIME,
-        FOREIGN KEY(player_uuid) REFERENCES players(uuid)
-      )`);
+      const raw = fs.readFileSync(DB_PATH, 'utf8');
+      if (!raw.trim()) {
+        this.persist();
+        return;
+      }
 
-      // Server stats table
-      this.db.run(`CREATE TABLE IF NOT EXISTS server_stats (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        total_deaths INTEGER DEFAULT 0,
-        total_players INTEGER DEFAULT 0,
-        online_players INTEGER DEFAULT 0,
-        dragon_slayers INTEGER DEFAULT 0,
-        server_uptime REAL DEFAULT 0,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`);
-
-      // Insert default stats row if not exists
-      this.db.get("SELECT * FROM server_stats WHERE id = 1", (err, row) => {
-        if (!row) {
-          this.db.run("INSERT INTO server_stats (id) VALUES (1)");
+      const parsed = JSON.parse(raw);
+      this.state = {
+        players: Array.isArray(parsed.players) ? parsed.players : [],
+        sessions: Array.isArray(parsed.sessions) ? parsed.sessions : [],
+        server_stats: {
+          total_deaths: parsed.server_stats?.total_deaths || 0,
+          online_players: parsed.server_stats?.online_players || 0,
+          dragon_slayers: parsed.server_stats?.dragon_slayers || 0,
+          server_uptime: parsed.server_stats?.server_uptime || 0,
+          updated_at: parsed.server_stats?.updated_at || new Date().toISOString()
         }
-      });
-    });
+      };
+    } catch (error) {
+      console.error('Error loading JSON database, starting fresh:', error);
+      this.persist();
+    }
   }
 
-  // Player methods
+  persist() {
+    this.state.server_stats.updated_at = new Date().toISOString();
+    fs.writeFileSync(DB_PATH, JSON.stringify(this.state, null, 2));
+  }
+
+  updateOnlineCount() {
+    this.state.server_stats.online_players = this.state.sessions.filter((s) => !s.logout_time).length;
+  }
+
   getTopPlayers(limit = 10) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        `SELECT username, survival_time, kills, deaths, is_alive, join_date, 
-                CASE 
-                  WHEN is_alive = 1 THEN 'Alive' 
-                  ELSE 'Dead' 
-                END as status
-         FROM players 
-         ORDER BY survival_time DESC, kills DESC 
-         LIMIT ?`,
-        [limit],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
+    const rows = [...this.state.players]
+      .sort((a, b) => (b.survival_time - a.survival_time) || (b.kills - a.kills))
+      .slice(0, limit)
+      .map((p) => ({
+        username: p.username,
+        survival_time: p.survival_time,
+        kills: p.kills,
+        deaths: p.deaths,
+        is_alive: p.is_alive,
+        join_date: p.join_date,
+        avatar_url: p.avatar_url,
+        status: p.is_alive ? 'Alive' : 'Dead'
+      }));
+
+    return Promise.resolve(rows);
   }
 
   getPlayerByUUID(uuid) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        "SELECT * FROM players WHERE uuid = ?",
-        [uuid],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    return Promise.resolve(this.state.players.find((p) => p.uuid === uuid));
   }
 
   getPlayerByUsername(username) {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        "SELECT * FROM players WHERE LOWER(username) = LOWER(?)",
-        [username],
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
-    });
+    const lower = String(username).toLowerCase();
+    return Promise.resolve(this.state.players.find((p) => String(p.username).toLowerCase() === lower));
   }
 
   createPlayer(uuid, username) {
-    return new Promise((resolve, reject) => {
-      const joinDate = new Date().toISOString().split('T')[0];
-      this.db.run(
-        `INSERT OR IGNORE INTO players (uuid, username, survival_time, join_date) 
-         VALUES (?, ?, 0, ?)`,
-        [uuid, username, joinDate],
-        function(err) {
-          if (err) reject(err);
-          else resolve(this.lastID);
-        }
-      );
-    });
+    const existing = this.state.players.find((p) => p.uuid === uuid);
+    if (existing) return Promise.resolve(existing.id);
+
+    const player = {
+      id: this.state.players.length + 1,
+      uuid,
+      username,
+      survival_time: 0,
+      kills: 0,
+      deaths: 0,
+      is_alive: 1,
+      last_login: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      avatar_url: null,
+      join_date: new Date().toISOString().split('T')[0]
+    };
+
+    this.state.players.push(player);
+    this.persist();
+    return Promise.resolve(player.id);
   }
 
   upsertPlayer(uuid, username) {
-    return new Promise((resolve, reject) => {
-      const joinDate = new Date().toISOString().split('T')[0];
-      this.db.run(
-        `INSERT INTO players (uuid, username, join_date)
-         VALUES (?, ?, ?)
-         ON CONFLICT(uuid) DO UPDATE SET username = excluded.username`,
-        [uuid, username, joinDate],
-        function(err) {
-          if (err) reject(err);
-          else resolve(this.lastID);
-        }
-      );
-    });
+    const existing = this.state.players.find((p) => p.uuid === uuid);
+    if (existing) {
+      existing.username = username;
+      existing.last_login = new Date().toISOString();
+      this.persist();
+      return Promise.resolve(existing.id);
+    }
+    return this.createPlayer(uuid, username);
   }
 
-  updatePlayerStats(uuid, survivalTime, kills) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "UPDATE players SET survival_time = ?, kills = ?, last_login = datetime('now') WHERE uuid = ?",
-        [survivalTime, kills, uuid],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+  updatePlayerStats(uuid, survivalTime = 0, kills = 0) {
+    const existing = this.state.players.find((p) => p.uuid === uuid);
+    if (!existing) return Promise.resolve();
+
+    existing.survival_time = Number(survivalTime) || 0;
+    existing.kills = Number(kills) || 0;
+    existing.last_login = new Date().toISOString();
+    this.persist();
+    return Promise.resolve();
   }
 
   recordDeath(uuid) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "UPDATE players SET is_alive = 0, deaths = deaths + 1 WHERE uuid = ?",
-        [uuid],
-        (err) => {
-          if (err) reject(err);
-          else {
-            // Increment total deaths
-            this.db.run("UPDATE server_stats SET total_deaths = total_deaths + 1 WHERE id = 1");
-            resolve();
-          }
-        }
-      );
-    });
+    const existing = this.state.players.find((p) => p.uuid === uuid);
+    if (!existing) return Promise.resolve();
+
+    existing.is_alive = 0;
+    existing.deaths += 1;
+    this.state.server_stats.total_deaths += 1;
+    this.persist();
+    return Promise.resolve();
   }
 
   recordLogin(uuid) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "INSERT INTO sessions (player_uuid) VALUES (?)",
-        [uuid],
-        (err) => {
-          if (err) reject(err);
-          else {
-            // Update online count
-            this.db.run("UPDATE server_stats SET online_players = (SELECT COUNT(*) FROM sessions WHERE logout_time IS NULL) WHERE id = 1");
-            resolve();
-          }
-        }
-      );
+    this.state.sessions.push({
+      id: this.state.sessions.length + 1,
+      player_uuid: uuid,
+      login_time: new Date().toISOString(),
+      logout_time: null
     });
+
+    this.updateOnlineCount();
+    this.persist();
+    return Promise.resolve();
   }
 
   recordLogout(uuid) {
-    return new Promise((resolve, reject) => {
-      // Update session
-      this.db.run(
-        `UPDATE sessions 
-         SET logout_time = datetime('now') 
-         WHERE player_uuid = ? AND logout_time IS NULL 
-         ORDER BY login_time DESC LIMIT 1`,
-        [uuid],
-        (err) => {
-          if (err) reject(err);
-          else {
-            // Calculate session duration and add to survival time
-            this.db.get(
-              `SELECT julianday(logout_time) - julianday(login_time) as duration_minutes 
-               FROM sessions 
-               WHERE player_uuid = ? 
-               ORDER BY login_time DESC LIMIT 1`,
-              [uuid],
-              (err, row) => {
-                if (row && row.duration_minutes) {
-                  const minutes = Math.round(row.duration_minutes * 24 * 60);
-                  this.db.run(
-                    "UPDATE players SET survival_time = survival_time + ? WHERE uuid = ?",
-                    [minutes, uuid]
-                  );
-                }
-                // Update online count
-                this.db.run("UPDATE server_stats SET online_players = (SELECT COUNT(*) FROM sessions WHERE logout_time IS NULL) WHERE id = 1");
-                resolve();
-              }
-            );
-          }
-        }
-      );
-    });
+    const session = [...this.state.sessions].reverse().find((s) => s.player_uuid === uuid && !s.logout_time);
+    if (session) {
+      session.logout_time = new Date().toISOString();
+      const start = new Date(session.login_time).getTime();
+      const end = new Date(session.logout_time).getTime();
+      const minutes = Math.max(0, Math.round((end - start) / (1000 * 60)));
+
+      const player = this.state.players.find((p) => p.uuid === uuid);
+      if (player) {
+        player.survival_time += minutes;
+      }
+    }
+
+    this.updateOnlineCount();
+    this.persist();
+    return Promise.resolve();
   }
 
   incrementDragonSlayer() {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "UPDATE server_stats SET dragon_slayers = dragon_slayers + 1 WHERE id = 1",
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    this.state.server_stats.dragon_slayers += 1;
+    this.persist();
+    return Promise.resolve();
   }
 
   recordDragonSlay(uuid) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "UPDATE players SET kills = kills + 1 WHERE uuid = ?",
-        [uuid],
-        (err) => {
-          if (err) reject(err);
-          else {
-            this.incrementDragonSlayer().then(resolve).catch(reject);
-          }
-        }
-      );
-    });
+    const player = this.state.players.find((p) => p.uuid === uuid);
+    if (player) {
+      player.kills += 1;
+    }
+
+    this.state.server_stats.dragon_slayers += 1;
+    this.persist();
+    return Promise.resolve();
   }
 
-  // Stats methods
   getServerStats() {
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        `SELECT 
-          (SELECT COUNT(*) FROM players) as total_players,
-          total_deaths,
-          online_players,
-          dragon_slayers,
-          server_uptime,
-          updated_at
-         FROM server_stats WHERE id = 1`,
-        (err, row) => {
-          if (err) reject(err);
-          else resolve(row);
-        }
-      );
+    return Promise.resolve({
+      total_players: this.state.players.length,
+      total_deaths: this.state.server_stats.total_deaths,
+      online_players: this.state.server_stats.online_players,
+      dragon_slayers: this.state.server_stats.dragon_slayers,
+      server_uptime: this.state.server_stats.server_uptime,
+      updated_at: this.state.server_stats.updated_at
     });
   }
 
   updateUptime(hours) {
-    return new Promise((resolve, reject) => {
-      this.db.run(
-        "UPDATE server_stats SET server_uptime = server_uptime + ?, updated_at = datetime('now') WHERE id = 1",
-        [hours],
-        (err) => {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-    });
+    this.state.server_stats.server_uptime += Number(hours) || 0;
+    this.persist();
+    return Promise.resolve();
   }
 
-  // Search players
   searchPlayers(query) {
-    return new Promise((resolve, reject) => {
-      this.db.all(
-        "SELECT * FROM players WHERE username LIKE ? LIMIT 10",
-        [`%${query}%`],
-        (err, rows) => {
-          if (err) reject(err);
-          else resolve(rows);
-        }
-      );
-    });
+    const q = String(query).toLowerCase();
+    const rows = this.state.players
+      .filter((p) => String(p.username).toLowerCase().includes(q))
+      .slice(0, 10);
+
+    return Promise.resolve(rows);
   }
 }
 
