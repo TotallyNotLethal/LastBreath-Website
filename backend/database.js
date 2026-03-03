@@ -273,7 +273,7 @@ class Database {
     };
   }
 
-  async persist(syncBlob = true) {
+  async persist(syncBlob = false) {
     this.state.server_stats.updated_at = new Date().toISOString();
     const serialized = JSON.stringify(this.state, null, 2);
     const tempPath = `${DB_PATH}.tmp`;
@@ -292,6 +292,10 @@ class Database {
     if (syncBlob) {
       await this.syncStateToBlob(serialized);
     }
+  }
+
+  async persistForServerRestart() {
+    await this.persist(true);
   }
 
   updateOnlineCount() {
