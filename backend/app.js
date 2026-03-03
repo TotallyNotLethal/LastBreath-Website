@@ -79,7 +79,7 @@ app.get('/api/leaderboard', async (req, res) => {
       // Convert survival time from minutes to days for display
       survival_days: Math.floor(player.survival_time / (24 * 60)),
       // Generate avatar URL if not set
-      avatar: player.avatar_url || `https://mc-heads.net/avatar/${player.username}/100`
+      avatar: player.avatar_url || `https://mc-heads.net/avatar/${encodeURIComponent(player.username && player.username !== 'Unknown Player' ? player.username : player.uuid)}/100`
     }));
 
     res.json({
