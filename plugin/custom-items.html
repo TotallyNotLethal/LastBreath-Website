@@ -143,17 +143,53 @@
 
     function normalizeBase64(payload) {
       if (!payload) return null;
-      if (typeof payload === "string") return payload;
+
+      const parsedPayload =
+        typeof payload.body === "string"
+          ? (() => {
+              try {
+                return JSON.parse(payload.body);
+              } catch {
+                return payload.body;
+              }
+            })()
+          : payload.body;
 
       const candidates = [
-        payload.base64,
-        payload.image,
-        payload.data,
-        payload.result?.base64,
-        payload.result?.image,
-        payload.result?.data,
+        payload,
+        parsedPayload,
+        payload?.result,
+        parsedPayload?.result,
+        payload?.data,
+        parsedPayload?.data,
       ];
-      return candidates.find((v) => typeof v === "string" && v.length > 0) || null;
+
+      for (const candidate of candidates) {
+        if (!candidate) continue;
+
+        if (typeof candidate === "string") {
+          const cleaned = candidate.trim().replace(/^data:image\/[a-zA-Z+.-]+;base64,/, "");
+          if (cleaned) return cleaned;
+          continue;
+        }
+
+        if (typeof candidate === "object") {
+          const maybeBase64 = [
+            candidate.base64,
+            candidate.image,
+            candidate.data,
+            candidate.value,
+          ];
+
+          for (const value of maybeBase64) {
+            if (typeof value !== "string") continue;
+            const cleaned = value.trim().replace(/^data:image\/[a-zA-Z+.-]+;base64,/, "");
+            if (cleaned) return cleaned;
+          }
+        }
+      }
+
+      return null;
     }
 
     async function setItemImage(img) {
