@@ -139,16 +139,57 @@
 
   <script>
     const ITEM_API_KEY = "mcapi_5ac3cc7a926e47045352b41f28b31582d634dc2fa1fb17d88fe1a6901b671fae";
-    const base = "https://www.minecraftitems.xyz";
-    document.querySelectorAll("img[data-item]").forEach((img) => {
+    const ITEM_PROXY_URL = "https://www.minecraftitems.xyz/api/proxy";
+
+    function normalizeBase64(payload) {
+      if (!payload) return null;
+      if (typeof payload === "string") return payload;
+
+      const candidates = [
+        payload.base64,
+        payload.image,
+        payload.data,
+        payload.result?.base64,
+        payload.result?.image,
+        payload.result?.data,
+      ];
+      return candidates.find((v) => typeof v === "string" && v.length > 0) || null;
+    }
+
+    async function setItemImage(img) {
       const item = img.dataset.item;
       const glint = img.dataset.glint === "true";
-      const url = new URL(`${base}/api/item/${item}`);
-      url.searchParams.set("apiKey", ITEM_API_KEY);
-      if (glint) url.searchParams.set("glint", "true");
-      img.src = url.toString();
+
+      try {
+        const response = await fetch(ITEM_PROXY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            endpoint: `/api/item/${item}`,
+            method: "GET",
+            queryParams: {
+              apiKey: ITEM_API_KEY,
+              ...(glint ? { glint: "true" } : {}),
+            },
+          }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const payload = await response.json();
+        const base64 = normalizeBase64(payload);
+        if (!base64) throw new Error("No base64 image in proxy response");
+
+        img.src = base64.startsWith("data:image") ? base64 : `data:image/png;base64,${base64}`;
+      } catch (error) {
+        console.error("Failed loading item image", item, error);
+      }
+    }
+
+    document.querySelectorAll("img[data-item]").forEach((img) => {
       img.loading = "lazy";
       img.referrerPolicy = "no-referrer";
+      setItemImage(img);
     });
   </script>
 
