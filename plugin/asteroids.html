@@ -1,1 +1,123 @@
-<!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Asteroids</title><script src='https://cdn.tailwindcss.com'></script></head><body class='bg-[#0f0f0f] text-gray-100'><main class='max-w-4xl mx-auto px-6 py-12'><a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a><h1 class='text-4xl font-black mt-4'>Asteroid Events</h1><p class='text-gray-300 mt-4'>Asteroids crash at scheduled times and announce coordinates globally. Each impact creates a contested zone with elite mobs, rare ores, and respawn components used for Hardcore recovery mechanics.</p><ul class='mt-6 list-disc pl-6 text-gray-400 space-y-2'><li>Public coordinate announcements</li><li>High-risk PvP/PvE hotspots</li><li>Respawn material rewards</li></ul></main></body></html>
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <meta name='viewport' content='width=device-width,initial-scale=1'>
+  <title>Asteroids</title>
+  <script src='https://cdn.tailwindcss.com'></script>
+</head>
+<body class='bg-[#0f0f0f] text-gray-100'>
+  <main class='max-w-5xl mx-auto px-6 py-12 space-y-10'>
+    <a href='/plugin/lastbreath-plugin.html' class='text-green-400'>← Plugin docs</a>
+
+    <section>
+      <h1 class='text-4xl font-black mt-4'>Asteroid Events</h1>
+      <p class='text-gray-300 mt-4'>Asteroids are timed world events that crash into configured worlds and broadcast their coordinates globally. The farther from spawn an asteroid lands, the higher its tier, mob pressure, and loot ceiling.</p>
+      <div class='grid md:grid-cols-2 gap-4 mt-6'>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h2 class='font-bold text-lg'>Spawn cadence</h2>
+          <ul class='mt-3 list-disc pl-5 text-gray-300 space-y-1'>
+            <li>Random timer between <span class='text-white font-semibold'>1200–3600s</span>.</li>
+            <li><span class='text-white font-semibold'>5%</span> chance to bias impact near players (up to 25,000 blocks).</li>
+            <li><span class='text-white font-semibold'>20%</span> meteor shower chance on spawn cycle.</li>
+            <li><span class='text-white font-semibold'>10s</span> countdown before impact.</li>
+          </ul>
+        </div>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h2 class='font-bold text-lg'>Combat space rules</h2>
+          <ul class='mt-3 list-disc pl-5 text-gray-300 space-y-1'>
+            <li>Impact blast radius: <span class='text-white font-semibold'>2 blocks</span>.</li>
+            <li>Mob leash radius: <span class='text-white font-semibold'>16 blocks</span>.</li>
+            <li>Base reaction radius: <span class='text-white font-semibold'>32 blocks</span>.</li>
+            <li>Per-mob reaction multipliers and minimum floors are configurable for pursuit pressure.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class='text-2xl font-bold'>Tier system by distance</h2>
+      <div class='overflow-x-auto mt-4'>
+        <table class='min-w-full text-left border border-[#2b2b2b] rounded-xl overflow-hidden'>
+          <thead class='bg-[#1a1a1a]'>
+            <tr>
+              <th class='px-4 py-3'>Tier</th>
+              <th class='px-4 py-3'>Distance threshold</th>
+              <th class='px-4 py-3'>Core mobs</th>
+              <th class='px-4 py-3'>Default count</th>
+              <th class='px-4 py-3'>Boss access</th>
+            </tr>
+          </thead>
+          <tbody class='text-gray-300'>
+            <tr class='border-t border-[#2b2b2b]'>
+              <td class='px-4 py-3 font-semibold text-white'>Tier 1</td>
+              <td class='px-4 py-3'>Base tier</td>
+              <td class='px-4 py-3'>Zombie, Skeleton</td>
+              <td class='px-4 py-3'>4 mobs</td>
+              <td class='px-4 py-3'>None</td>
+            </tr>
+            <tr class='border-t border-[#2b2b2b]'>
+              <td class='px-4 py-3 font-semibold text-white'>Tier 2</td>
+              <td class='px-4 py-3'>10,000+ blocks</td>
+              <td class='px-4 py-3'>Zombie, Skeleton, Blaze, Magma Cube</td>
+              <td class='px-4 py-3'>6 mobs</td>
+              <td class='px-4 py-3'>None</td>
+            </tr>
+            <tr class='border-t border-[#2b2b2b]'>
+              <td class='px-4 py-3 font-semibold text-white'>Tier 3</td>
+              <td class='px-4 py-3'>100,000+ blocks</td>
+              <td class='px-4 py-3'>Zombie, Skeleton, Wither Skeleton, Vex, Piglin Brute</td>
+              <td class='px-4 py-3'>8 mobs</td>
+              <td class='px-4 py-3'>Ravager / Warden bosses</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class='text-gray-400 mt-3 text-sm'>Each tier can also apply potion effects and AOE zones (radius, duration, particles, delay) from config, with stronger defaults on higher tiers.</p>
+    </section>
+
+    <section>
+      <h2 class='text-2xl font-bold'>Tier 3 boss mechanics</h2>
+      <p class='text-gray-300 mt-2'>Tier 3 bosses can roll advanced ability packages tracked internally by mechanic metadata keys. Expect zone denial, burst windows, and movement checks:</p>
+      <div class='grid md:grid-cols-2 gap-4 mt-4 text-gray-300'>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h3 class='font-semibold text-white'>Projectile & area mechanics</h3>
+          <ul class='list-disc pl-5 mt-2 space-y-1'>
+            <li>Projectile blast detonations.</li>
+            <li>Firewall patterns that apply fire pressure.</li>
+            <li>Ravager slam impact shocks.</li>
+          </ul>
+        </div>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h3 class='font-semibold text-white'>Boss-specific signatures</h3>
+          <ul class='list-disc pl-5 mt-2 space-y-1'>
+            <li>Warden pulse knockback/control windows.</li>
+            <li>Piglin Brute flame waves.</li>
+            <li>Wither nova with stacked team punishment.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class='text-2xl font-bold'>Loot profile</h2>
+      <p class='text-gray-300 mt-2'>Asteroid cores always drop scaled resource bundles, then roll optional rare drops, custom utility items, enchant pages, and (Tier 3 only) cosmetic aura tokens.</p>
+      <div class='grid lg:grid-cols-3 gap-4 mt-4'>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h3 class='font-semibold text-white'>Guaranteed scaled materials</h3>
+          <p class='text-gray-300 mt-2 text-sm'>Iron, gold, emeralds, diamonds, and chance-based netherite scrap scale per tier with min/max config ranges.</p>
+        </div>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h3 class='font-semibold text-white'>Rare roll table</h3>
+          <p class='text-gray-300 mt-2 text-sm'>Totem of Undying, Enchanted Golden Apple, Nether Star, Ancient Debris, Dragon Breath, Heavy Core, and Dragon Egg with higher tier odds.</p>
+        </div>
+        <div class='bg-[#171717] border border-[#2b2b2b] rounded-xl p-4'>
+          <h3 class='font-semibold text-white'>Special systems</h3>
+          <p class='text-gray-300 mt-2 text-sm'>Tier 2/3 can roll Rebirth Stone, Totem of Life, Gracestone, and Enhanced Grindstone. Enchant pages are configurable with extra rolls; Tier 3 guarantees at least one page if none hit.</p>
+        </div>
+      </div>
+      <p class='text-gray-400 mt-4 text-sm'>Tier 3 also has a <span class='text-white'>2%</span> default chance to drop one cosmetic aura token from the configured aura pool.</p>
+    </section>
+  </main>
+</body>
+</html>
