@@ -9,7 +9,7 @@ const { queryJavaServerStatus } = require('./minecraftQuery');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const API_KEY = 'LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME';
+const API_KEY = process.env.LASTBREATH_API_KEY || 'LASTBREATH_PLUGIN_TEST_KEY_CHANGE_ME';
 const statsEventClients = new Set();
 const LEADERBOARD_METRICS = [
   'playtime',
