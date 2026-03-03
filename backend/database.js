@@ -11,7 +11,14 @@ const BLOB_PATHNAME = process.env.BLOB_DB_PATHNAME || 'player-data/lastbreath-da
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 const BLOB_SYNC_ENABLED = Boolean(BLOB_TOKEN);
 
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+let fsPersistenceAvailable = true;
+
+try {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+} catch (error) {
+  fsPersistenceAvailable = false;
+  console.warn(`Filesystem persistence disabled (failed creating DB directory at ${DB_PATH}):`, error?.message || error);
+}
 
 class Database {
   constructor() {
@@ -229,9 +236,16 @@ class Database {
     const serialized = JSON.stringify(this.state, null, 2);
     const tempPath = `${DB_PATH}.tmp`;
 
-    fs.writeFileSync(tempPath, serialized, 'utf8');
-    fs.renameSync(tempPath, DB_PATH);
-    fs.writeFileSync(DB_BACKUP_PATH, serialized, 'utf8');
+    if (fsPersistenceAvailable) {
+      try {
+        fs.writeFileSync(tempPath, serialized, 'utf8');
+        fs.renameSync(tempPath, DB_PATH);
+        fs.writeFileSync(DB_BACKUP_PATH, serialized, 'utf8');
+      } catch (error) {
+        fsPersistenceAvailable = false;
+        console.warn('Filesystem persistence disabled (writes failed, continuing in-memory/blob-only mode):', error?.message || error);
+      }
+    }
 
     if (syncBlob) {
       void this.syncStateToBlob(serialized);
