@@ -23,7 +23,17 @@ class Database {
     };
 
     this.load();
+    this.refreshDerivedStats();
     console.log(`Connected to JSON database at ${DB_PATH}`);
+  }
+
+  refreshDerivedStats() {
+    const totalDeaths = this.state.players.reduce((sum, player) => {
+      return sum + (Number(player.deaths) || 0);
+    }, 0);
+
+    this.state.server_stats.total_deaths = totalDeaths;
+    this.updateOnlineCount();
   }
 
   buildDefaultPlayer(uuid, username = 'Unknown Player') {
@@ -99,6 +109,8 @@ class Database {
           updated_at: parsed.server_stats?.updated_at || new Date().toISOString()
         }
       };
+
+      this.refreshDerivedStats();
     } catch (error) {
       console.error('Error loading JSON database, starting fresh:', error);
       this.persist();
@@ -111,7 +123,13 @@ class Database {
   }
 
   updateOnlineCount() {
-    this.state.server_stats.online_players = this.state.sessions.filter((s) => !s.logout_time).length;
+    const openSessions = new Set(
+      this.state.sessions
+        .filter((session) => session?.player_uuid && !session.logout_time)
+        .map((session) => session.player_uuid)
+    );
+
+    this.state.server_stats.online_players = openSessions.size;
   }
 
   getTopPlayers(limit = 10, metric = 'playtime') {
@@ -195,6 +213,7 @@ class Database {
     if (existing) {
       existing.username = username;
       existing.last_login = new Date().toISOString();
+      existing.is_alive = Number(existing.deaths || 0) > 0 ? 0 : 1;
       this.persist();
       return Promise.resolve(existing.id);
     }
@@ -248,7 +267,11 @@ class Database {
     existing.equipped_kill_message = payload.equipped_kill_message ?? existing.equipped_kill_message;
     if (typeof payload.is_alive === 'boolean') {
       existing.is_alive = payload.is_alive ? 1 : 0;
+    } else if (payload.deaths !== undefined) {
+      existing.is_alive = Number(existing.deaths) > 0 ? 0 : 1;
     }
+
+    this.refreshDerivedStats();
     existing.last_login = new Date().toISOString();
     this.persist();
     return Promise.resolve(existing);
