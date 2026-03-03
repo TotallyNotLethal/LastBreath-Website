@@ -3,6 +3,7 @@ const db = require('./database');
 
 const startServer = async () => {
   await db.ready;
+  await db.persistForServerRestart();
 
   app.listen(PORT, () => {
     console.log(`🚀 Last Breath API Server running on port ${PORT}`);
