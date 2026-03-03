@@ -1,17 +1,28 @@
 const fs = require('fs');
 const path = require('path');
-const { get, put } = require('@vercel/blob');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
 const runtimeDbPath = process.env.DB_PATH || path.join(__dirname, 'lastbreath-data.json');
 const DB_PATH = path.resolve(runtimeDbPath);
 const DB_BACKUP_PATH = `${DB_PATH}.bak`;
 
+const AWS_REGION = process.env.players_AWS_REGION || process.env.AWS_REGION || process.env.aws_region || '';
+const DYNAMODB_TABLE_NAME = process.env.players_DYNAMODB_TABLE_NAME || process.env.DYNAMODB_TABLE_NAME || '';
+const DYNAMODB_PARTITION_KEY = process.env.players_DYNAMODB_TABLE_PARTITION_KEY || 'PK';
+const DYNAMODB_SORT_KEY = process.env.players_DYNAMODB_TABLE_SORT_KEY || 'SK';
+const DYNAMODB_STATE_PK = process.env.players_DYNAMODB_STATE_PK || 'STATE';
+const DYNAMODB_STATE_SK = process.env.players_DYNAMODB_STATE_SK || 'CURRENT';
 
-const BLOB_PATHNAME = process.env.BLOB_DB_PATHNAME || 'player-data/lastbreath-data.json';
-const BLOB_READ_URL = process.env.BLOB_DB_READ_URL || '';
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-const BLOB_READ_ENABLED = Boolean(BLOB_TOKEN || BLOB_READ_URL);
-const BLOB_SYNC_ENABLED = Boolean(BLOB_TOKEN);
+const AWS_DB_ENABLED = Boolean(AWS_REGION && DYNAMODB_TABLE_NAME);
+
+const dynamoClient = AWS_DB_ENABLED
+  ? DynamoDBDocumentClient.from(new DynamoDBClient({ region: AWS_REGION }), {
+    marshallOptions: {
+      removeUndefinedValues: true
+    }
+  })
+  : null;
 
 let fsPersistenceAvailable = true;
 
@@ -37,104 +48,93 @@ class Database {
     };
 
     this.usernameLookupCache = new Map();
-    this.lastBlobHydrationAt = 0;
+    this.lastAwsHydrationAt = 0;
     this.load();
     this.refreshDerivedStats();
-    this.ready = this.hydrateFromBlob();
+    this.ready = this.hydrateFromAws();
     console.log(`Connected to JSON database at ${DB_PATH}`);
   }
 
-  async hydrateFromBlob(options = {}) {
-    const { requireBlob = false } = options;
+  async hydrateFromAws(options = {}) {
+    const { requireAws = false } = options;
 
-    if (!BLOB_READ_ENABLED) {
-      if (requireBlob) {
-        throw new Error('Blob read source is not configured');
+    if (!AWS_DB_ENABLED || !dynamoClient) {
+      if (requireAws) {
+        throw new Error('AWS DynamoDB source is not configured');
       }
       return false;
     }
 
     try {
-      let downloadUrl = BLOB_READ_URL || '';
+      const key = {
+        [DYNAMODB_PARTITION_KEY]: DYNAMODB_STATE_PK,
+        [DYNAMODB_SORT_KEY]: DYNAMODB_STATE_SK
+      };
 
-      if (!downloadUrl) {
-        const blobResponse = await get(BLOB_PATHNAME, {
-          access: 'private',
-          token: BLOB_TOKEN
-        });
+      const response = await dynamoClient.send(new GetCommand({
+        TableName: DYNAMODB_TABLE_NAME,
+        Key: key,
+        ConsistentRead: true
+      }));
 
-        if (!blobResponse?.downloadUrl) {
-          if (requireBlob) {
-            throw new Error(`Blob dataset missing at ${BLOB_PATHNAME}`);
-          }
-          return false;
-        }
-
-        downloadUrl = blobResponse.downloadUrl;
-      }
-
-      const downloadResponse = await fetch(downloadUrl, {
-        cache: 'no-store',
-        headers: BLOB_TOKEN ? { Authorization: `Bearer ${BLOB_TOKEN}` } : undefined
-      });
-
-      if (!downloadResponse.ok) {
-        throw new Error(`Blob download failed with status ${downloadResponse.status}`);
-      }
-
-      const blobText = await downloadResponse.text();
-      if (!blobText.trim()) {
-        if (requireBlob) {
-          throw new Error(`Blob dataset is empty at ${BLOB_PATHNAME}`);
+      if (!response?.Item) {
+        if (requireAws) {
+          throw new Error(`DynamoDB state item missing at ${DYNAMODB_TABLE_NAME}`);
         }
         return false;
       }
 
-      const parsed = JSON.parse(blobText);
+      const stateValue = response.Item.state;
+      if (!stateValue) {
+        if (requireAws) {
+          throw new Error(`DynamoDB state is empty at ${DYNAMODB_TABLE_NAME}`);
+        }
+        return false;
+      }
+
+      const parsed = typeof stateValue === 'string' ? JSON.parse(stateValue) : stateValue;
       this.state = this.buildStateFromParsed(parsed);
       this.refreshDerivedStats();
-      this.lastBlobHydrationAt = Date.now();
+      this.lastAwsHydrationAt = Date.now();
       this.persist(false);
-      console.log(`Hydrated JSON database from Vercel Blob path: ${downloadUrl || BLOB_PATHNAME}`);
+      console.log(`Hydrated JSON database from AWS DynamoDB table ${DYNAMODB_TABLE_NAME}`);
       return true;
     } catch (error) {
-      if (error?.name === 'BlobNotFoundError') {
-        if (requireBlob) {
-          throw new Error(`Blob dataset missing at ${BLOB_PATHNAME}`);
-        }
-        console.log(`No Blob dataset found at ${BLOB_PATHNAME}. Continuing with local JSON state.`);
-      } else {
-        if (requireBlob) {
-          throw error;
-        }
-        console.warn('Failed to hydrate database from Vercel Blob:', error?.message || error);
+      if (requireAws) {
+        throw error;
       }
+      console.warn('Failed to hydrate database from AWS DynamoDB:', error?.message || error);
       return false;
     }
   }
 
-  async syncStateToBlob(serializedState) {
-    if (!BLOB_SYNC_ENABLED) {
+  async syncStateToAws(serializedState) {
+    if (!AWS_DB_ENABLED || !dynamoClient) {
       return;
     }
 
     try {
-      const blob = await put(BLOB_PATHNAME, serializedState, {
-        access: 'private',
-        addRandomSuffix: false,
-        allowOverwrite: true,
-        contentType: 'application/json',
-        token: BLOB_TOKEN
-      });
-      this.lastBlobUrl = blob.url;
+      const key = {
+        [DYNAMODB_PARTITION_KEY]: DYNAMODB_STATE_PK,
+        [DYNAMODB_SORT_KEY]: DYNAMODB_STATE_SK
+      };
+
+      await dynamoClient.send(new PutCommand({
+        TableName: DYNAMODB_TABLE_NAME,
+        Item: {
+          ...key,
+          state: serializedState,
+          updated_at: new Date().toISOString()
+        }
+      }));
     } catch (error) {
-      console.warn('Failed syncing JSON database to Vercel Blob:', error?.message || error);
+      console.warn('Failed syncing JSON database to AWS DynamoDB:', error?.message || error);
     }
   }
 
-  async ensureLatestBlobState(options = {}) {
-    const { requireBlob = false } = options;
-    await this.hydrateFromBlob({ requireBlob });
+  async ensureLatestAwsState(options = {}) {
+    const { requireAws = false, requireBlob = false } = options;
+    await this.hydrateFromAws({ requireAws: requireAws || requireBlob });
   }
 
   async resolveUsernameFromUUID(uuid) {
@@ -285,12 +285,12 @@ class Database {
         fs.writeFileSync(DB_BACKUP_PATH, serialized, 'utf8');
       } catch (error) {
         fsPersistenceAvailable = false;
-        console.warn('Filesystem persistence disabled (writes failed, continuing in-memory/blob-only mode):', error?.message || error);
+        console.warn('Filesystem persistence disabled (writes failed, continuing in-memory/AWS-only mode):', error?.message || error);
       }
     }
 
-    if (syncBlob) {
-      await this.syncStateToBlob(serialized);
+    if (syncBlob || AWS_DB_ENABLED) {
+      await this.syncStateToAws(serialized);
     }
   }
 
@@ -309,7 +309,7 @@ class Database {
   }
 
   async getTopPlayers(limit = 10, metric = 'playtime', options = {}) {
-    await this.ensureLatestBlobState(options);
+    await this.ensureLatestAwsState(options);
 
     const metricExtractors = {
       playtime: (p) => Number(p.time_alive_ticks || 0),
@@ -369,7 +369,7 @@ class Database {
   }
 
   async getAllPlayers(options = {}) {
-    await this.ensureLatestBlobState(options);
+    await this.ensureLatestAwsState(options);
 
     const rows = [...this.state.players]
       .sort((a, b) => {
@@ -383,18 +383,18 @@ class Database {
   }
 
   async getPlayerByUUID(uuid) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     return this.state.players.find((p) => p.uuid === uuid);
   }
 
   async getPlayerByUsername(username) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const lower = String(username).toLowerCase();
     return this.state.players.find((p) => String(p.username).toLowerCase() === lower);
   }
 
   async createPlayer(uuid, username) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) return existing.id;
 
@@ -406,7 +406,7 @@ class Database {
   }
 
   async upsertPlayer(uuid, username) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (existing) {
       existing.username = username;
@@ -419,7 +419,7 @@ class Database {
   }
 
   async updatePlayerStats(uuid, survivalTime = 0, kills = 0) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (!existing) return;
 
@@ -430,7 +430,7 @@ class Database {
   }
 
   async upsertFullPlayerStats(payload = {}) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const uuid = payload.uuid;
     if (!uuid) return;
 
@@ -486,7 +486,7 @@ class Database {
   }
 
   async upsertAllPlayerStats(players = []) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     if (!Array.isArray(players)) {
       return { updated: 0, failed: 0, errors: [] };
     }
@@ -515,7 +515,7 @@ class Database {
   }
 
   async recordDeath(uuid) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const existing = this.state.players.find((p) => p.uuid === uuid);
     if (!existing) return;
 
@@ -526,7 +526,7 @@ class Database {
   }
 
   async recordLogin(uuid) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     this.state.sessions.push({
       id: this.state.sessions.length + 1,
       player_uuid: uuid,
@@ -539,7 +539,7 @@ class Database {
   }
 
   async recordLogout(uuid) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const session = [...this.state.sessions].reverse().find((s) => s.player_uuid === uuid && !s.logout_time);
     if (session) {
       session.logout_time = new Date().toISOString();
@@ -558,13 +558,13 @@ class Database {
   }
 
   async incrementDragonSlayer() {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     this.state.server_stats.dragon_slayers += 1;
     await this.persist();
   }
 
   async recordDragonSlay(uuid) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     const player = this.state.players.find((p) => p.uuid === uuid);
     if (player) {
       player.kills += 1;
@@ -575,7 +575,7 @@ class Database {
   }
 
   async getServerStats(options = {}) {
-    await this.ensureLatestBlobState(options);
+    await this.ensureLatestAwsState(options);
 
     return {
       total_players: this.state.players.length,
@@ -588,13 +588,13 @@ class Database {
   }
 
   async updateUptime(hours) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
     this.state.server_stats.server_uptime += Number(hours) || 0;
     await this.persist();
   }
 
   async searchPlayers(query) {
-    await this.ensureLatestBlobState();
+    await this.ensureLatestAwsState();
 
     const q = String(query).toLowerCase();
     const rows = this.state.players
