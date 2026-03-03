@@ -4,8 +4,10 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { HeadObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const db = require('./database');
 const { queryJavaServerStatus } = require('./minecraftQuery');
+const { client: s3Client, ITEM_IMAGES_BUCKET, ITEM_IMAGES_PREFIX, buildPublicImageUrl } = require('./s3Client');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +26,63 @@ const LEADERBOARD_METRICS = [
   'fish_caught',
   'asteroids_looted'
 ];
+const ITEM_API_KEY = process.env.MINECRAFT_ITEMS_API_KEY || 'mcapi_5ac3cc7a926e47045352b41f28b31582d634dc2fa1fb17d88fe1a6901b671fae';
+const ITEM_PROXY_URL = process.env.ITEM_PROXY_URL || 'https://www.minecraftitems.xyz/api/proxy';
+
+const normalizeBase64Image = (payload) => {
+  if (!payload) return null;
+
+  const parsedPayload = typeof payload.body === 'string'
+    ? (() => {
+      try {
+        return JSON.parse(payload.body);
+      } catch {
+        return payload.body;
+      }
+    })()
+    : payload.body;
+
+  const candidates = [
+    payload,
+    parsedPayload,
+    payload?.result,
+    parsedPayload?.result,
+    payload?.data,
+    parsedPayload?.data
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+
+    if (typeof candidate === 'string') return candidate.trim();
+
+    if (typeof candidate === 'object') {
+      const maybeBase64 = [candidate.base64, candidate.image, candidate.data, candidate.value];
+      for (const value of maybeBase64) {
+        if (typeof value === 'string' && value.trim()) return value.trim();
+      }
+    }
+  }
+
+  return null;
+};
+
+const parseDataUrl = (rawImage) => {
+  const trimmed = rawImage.trim();
+  const dataUrlMatch = trimmed.match(/^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/);
+
+  if (dataUrlMatch) {
+    return {
+      contentType: dataUrlMatch[1],
+      base64: dataUrlMatch[2]
+    };
+  }
+
+  return {
+    contentType: 'image/png',
+    base64: trimmed
+  };
+};
 
 // Security middleware
 app.use(helmet());
@@ -279,6 +338,81 @@ app.get('/api/player/:username', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch player' });
+  }
+});
+
+app.get('/api/item-image/:item', async (req, res) => {
+  const item = String(req.params.item || '').trim();
+  const glint = String(req.query.glint || '').toLowerCase() === 'true';
+
+  if (!item) {
+    return res.status(400).json({ error: 'Item id is required' });
+  }
+
+  const keySuffix = glint ? '-glint' : '';
+  const objectKey = `${ITEM_IMAGES_PREFIX}${item}${keySuffix}.png`;
+
+  try {
+    if (s3Client && ITEM_IMAGES_BUCKET) {
+      try {
+        await s3Client.send(new HeadObjectCommand({ Bucket: ITEM_IMAGES_BUCKET, Key: objectKey }));
+        return res.json({ success: true, data: { imageUrl: buildPublicImageUrl(objectKey), source: 's3-cache' } });
+      } catch (error) {
+        if (error?.$metadata?.httpStatusCode !== 404 && error?.name !== 'NotFound') {
+          console.warn(`S3 cache check failed for ${objectKey}:`, error?.message || error);
+        }
+      }
+    }
+
+    const response = await fetch(ITEM_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        endpoint: `/api/item/${item}`,
+        method: 'GET',
+        queryParams: {
+          apiKey: ITEM_API_KEY,
+          ...(glint ? { glint: 'true' } : {})
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Item proxy returned HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const rawImage = normalizeBase64Image(payload);
+    if (!rawImage) {
+      throw new Error('No base64 image in proxy response');
+    }
+
+    const { contentType, base64 } = parseDataUrl(rawImage);
+
+    if (s3Client && ITEM_IMAGES_BUCKET) {
+      const buffer = Buffer.from(base64, 'base64');
+
+      await s3Client.send(new PutObjectCommand({
+        Bucket: ITEM_IMAGES_BUCKET,
+        Key: objectKey,
+        Body: buffer,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000, immutable'
+      }));
+
+      return res.json({ success: true, data: { imageUrl: buildPublicImageUrl(objectKey), source: 's3-upload' } });
+    }
+
+    return res.json({
+      success: true,
+      data: {
+        imageUrl: `data:${contentType};base64,${base64}`,
+        source: 'inline-base64-fallback'
+      }
+    });
+  } catch (error) {
+    console.error(`Failed to resolve item image for ${item}:`, error);
+    return res.status(502).json({ error: 'Failed to fetch item image' });
   }
 });
 
