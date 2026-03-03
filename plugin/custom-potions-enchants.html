@@ -24,6 +24,7 @@
         <li><code>allowFromAwkward: true</code> means the potion can be brewed from awkward potion routes.</li>
         <li><code>allowFromAwkward: false</code> means it is progression/branch gated.</li>
         <li><code>scaryToDrink: true</code> flags high-risk flavor/tier brews.</li>
+        <li><strong>Glowstone Dust</strong> makes a potion stronger, <strong>Redstone</strong> makes it last longer, and <strong>Ghast Tears</strong> remove negative potion effects.</li>
       </ul>
     </section>
 
@@ -161,6 +162,18 @@
       return `<span class="px-2 py-1 rounded text-xs ${cls}">${text}</span>`;
     }
 
+    function toTitleFromId(id) {
+      return id
+        .split('_')
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join(' ');
+    }
+
+    const potionNameById = Object.fromEntries(potions.map((p) => [p.id, p.name]));
+    function friendlyPotionName(id) {
+      return potionNameById[id] || `Potion of ${toTitleFromId(id)}`;
+    }
+
     const potionsEl = document.getElementById('potions');
     potions.forEach((p) => {
       const card = document.createElement('article');
@@ -177,8 +190,8 @@
           <p><strong class="text-green-300">Base effects:</strong> ${p.base.join(', ')}</p>
           <p class="mt-1"><strong class="text-red-300">Drawbacks:</strong> ${p.drawbacks.join(', ')}</p>
           <p class="mt-1"><strong class="text-purple-300">Custom effects:</strong> ${p.custom.join(', ')}</p>
-          <p class="mt-1"><strong class="text-yellow-300">Branches:</strong> ${p.branches.join(', ')}</p>
-          <p class="mt-1"><strong class="text-yellow-300">Branch brews from:</strong> ${p.branchBrews.join(', ')}</p>
+          <p class="mt-1"><strong class="text-yellow-300">Branches into:</strong> ${p.branches.map(friendlyPotionName).join(' → ')}</p>
+          <p class="mt-1"><strong class="text-yellow-300">Brewed from branches:</strong> ${p.branchBrews.map(friendlyPotionName).join(', ')}</p>
         </div>
       `;
       potionsEl.appendChild(card);
