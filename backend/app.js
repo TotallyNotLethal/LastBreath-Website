@@ -124,9 +124,9 @@ app.get('/api/leaderboard', async (req, res) => {
     const limit = requestedLimit === 'all' ? Number.MAX_SAFE_INTEGER : (parseInt(requestedLimit, 10) || 5);
     const requestedMetric = String(req.query.metric || 'playtime').toLowerCase();
     const metric = LEADERBOARD_METRICS.includes(requestedMetric) ? requestedMetric : 'playtime';
-    const players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric, { requireBlob: true });
+    const players = await db.getTopPlayers(Number.MAX_SAFE_INTEGER, metric, { requireAws: true });
 
-    // Add rank to each player from the full roster in Blob-backed storage.
+    // Add rank to each player from the full roster in AWS-backed storage.
     const rankedPlayers = players.map((player, index) => ({
       rank: index + 1,
       ...player,
@@ -154,7 +154,7 @@ app.get('/api/leaderboard', async (req, res) => {
 // Return every known player so the frontend can always render full historical lists.
 app.get('/api/players', async (req, res) => {
   try {
-    const players = await db.getAllPlayers({ requireBlob: true });
+    const players = await db.getAllPlayers({ requireAws: true });
     res.json({
       success: true,
       total_players: players.length,
