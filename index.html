@@ -773,10 +773,10 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/stats`);
                 const result = await parseApiResponse(response, 'Stats');
-                if (result.success) updateStats(result.data);
+                if (result.success) updateLiveStats(result.data);
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
-                updateStats({ total_players: 0, total_deaths: 0, dragon_slayers: 0, server_uptime: 99.9, online_players: 0 });
+                updateLiveStats({ server_uptime: 99.9, online_players: 0 });
             }
         }
 
@@ -785,6 +785,7 @@
                 const response = await fetch(`${API_BASE_URL}/leaderboard?limit=all&metric=${encodeURIComponent(activeMetric)}`);
                 const result = await parseApiResponse(response, 'Leaderboard');
                 if (result.success) {
+                    updateAggregateStatsFromPlayers(result.data || []);
                     currentLeaderboardPage = 1;
                     renderLeaderboard(result.data);
                 }
@@ -798,11 +799,30 @@
             }
         }
 
-        function updateStats(data) {
+        function updateAggregateStatsFromPlayers(players) {
+            const fullRoster = Array.isArray(players) ? players : [];
+            const totalPlayers = fullRoster.length;
+            const totalDeaths = fullRoster.reduce((sum, player) => sum + (Number(player?.deaths) || 0), 0);
+            const dragonSlayers = fullRoster.reduce((sum, player) => {
+                if (Number(player?.ender_dragon_kills) > 0 || Number(player?.dragon_kills) > 0 || Number(player?.dragons_slain) > 0) {
+                    return sum + 1;
+                }
+
+                if (player?.dragon_slayer === true || player?.is_dragon_slayer === true) {
+                    return sum + 1;
+                }
+
+                return sum;
+            }, 0);
+
+            animateValue('stat-players', 0, totalPlayers, 2000);
+            animateValue('stat-deaths', 0, totalDeaths, 2000);
+            animateValue('stat-winners', 0, dragonSlayers, 2000);
+        }
+
+
+        function updateLiveStats(data) {
             document.getElementById('online-count').textContent = data.online_players || 0;
-            animateValue('stat-players', 0, data.total_players || 0, 2000);
-            animateValue('stat-deaths', 0, data.total_deaths || 0, 2000);
-            animateValue('stat-winners', 0, data.dragon_slayers || 0, 2000);
             document.getElementById('stat-uptime').textContent = `${data.server_uptime || 99.9}%`;
         }
 
@@ -821,7 +841,7 @@
                 try {
                     const payload = JSON.parse(event.data || '{}');
                     if (payload?.data) {
-                        updateStats(payload.data);
+                        updateLiveStats(payload.data);
                     }
                 } catch (error) {
                     console.error('Failed to parse stats stream payload:', error);
