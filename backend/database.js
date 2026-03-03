@@ -22,9 +22,35 @@ class Database {
       }
     };
 
+    this.usernameLookupCache = new Map();
     this.load();
     this.refreshDerivedStats();
     console.log(`Connected to JSON database at ${DB_PATH}`);
+  }
+
+  async resolveUsernameFromUUID(uuid) {
+    const normalizedUuid = String(uuid || '').replace(/-/g, '').trim();
+    if (!normalizedUuid) return null;
+
+    if (this.usernameLookupCache.has(normalizedUuid)) {
+      return this.usernameLookupCache.get(normalizedUuid);
+    }
+
+    try {
+      const response = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${encodeURIComponent(normalizedUuid)}`);
+      if (!response.ok) {
+        this.usernameLookupCache.set(normalizedUuid, null);
+        return null;
+      }
+
+      const profile = await response.json();
+      const username = typeof profile?.name === 'string' && profile.name.trim() ? profile.name.trim() : null;
+      this.usernameLookupCache.set(normalizedUuid, username);
+      return username;
+    } catch (error) {
+      console.warn(`Failed to resolve username for UUID ${normalizedUuid}:`, error?.message || error);
+      return null;
+    }
   }
 
   refreshDerivedStats() {
@@ -245,7 +271,7 @@ class Database {
     return Promise.resolve();
   }
 
-  upsertFullPlayerStats(payload = {}) {
+  async upsertFullPlayerStats(payload = {}) {
     const uuid = payload.uuid;
     if (!uuid) return Promise.resolve();
 
@@ -255,7 +281,15 @@ class Database {
       this.state.players.push(existing);
     }
 
-    existing.username = payload.username || payload.nickname || existing.username;
+    const providedUsername = String(payload.username || payload.nickname || '').trim();
+    const hasRealUsername = providedUsername && providedUsername !== 'Unknown Player';
+    if (hasRealUsername) {
+      existing.username = providedUsername;
+      this.usernameLookupCache.set(String(uuid).replace(/-/g, '').trim(), providedUsername);
+    } else if (!existing.username || existing.username === 'Unknown Player') {
+      const resolvedUsername = await this.resolveUsernameFromUUID(uuid);
+      existing.username = resolvedUsername || existing.username || 'Unknown Player';
+    }
     existing.nickname = payload.nickname ?? existing.nickname;
     existing.time_alive_ticks = Number(payload.time_alive ?? payload.time_alive_ticks ?? existing.time_alive_ticks) || 0;
     existing.survival_time = Math.floor(existing.time_alive_ticks / (20 * 60));
