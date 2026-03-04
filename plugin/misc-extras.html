@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Purpur Misc Extras</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100">
+  <main class="max-w-6xl mx-auto px-6 py-12">
+    <a href="/plugin/index.html" class="text-blue-400 hover:text-blue-300 text-sm">← Back to plugin wiki hub</a>
+    <h1 class="text-4xl md:text-5xl font-black mt-4">Purpur <span class="text-blue-500">Misc Extras</span></h1>
+    <p class="text-gray-400 mt-4 max-w-4xl">Quick reference for currently enabled Purpur extras only. Disabled toggles are intentionally omitted.</p>
+
+    <section class="mt-10 grid md:grid-cols-2 gap-6">
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-green-300">Nether Build Height Guard</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li><strong>Enabled:</strong> true</li>
+          <li><strong>Height limit:</strong> 256</li>
+          <li><strong>Message:</strong> <code>Max build height in this world is: 256</code></li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-cyan-300">Sleep Progress Chat Messages</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li><strong>Enabled:</strong> true</li>
+          <li><strong>Player sleeping:</strong> <code>A player has fallen asleep. Sleeping progress is shown for World.</code></li>
+          <li><strong>Skipping night:</strong> <code>Enough players have slept! Skipping through the night in World.</code></li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-blue-300">Mob / Block QoL</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Snow golems drop pumpkins when sheared</li>
+          <li>Shift-right-click can place invisible item frames</li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-yellow-300">Gameplay Rules</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Respawn anchors require charges</li>
+          <li>Fall damage applies when jump boost is active</li>
+          <li>Totems work on void death</li>
+          <li>Raid totem drops enabled (<strong>25%</strong> chance)</li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5 md:col-span-2">
+        <h2 class="text-2xl font-bold text-purple-300">Run Faster on Path Blocks</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li><strong>Enabled:</strong> true</li>
+          <li><strong>Modifier type:</strong> <code>add_scalar</code></li>
+          <li><strong>Speed value:</strong> <code>0.25</code></li>
+          <li><strong>Path blocks:</strong> DIRT_PATH, SMOOTH_STONE, END_STONE_BRICKS, END_STONE_BRICK_STAIRS, PURPUR_BLOCK, PURPUR_STAIRS, POLISHED_BLACKSTONE_STAIRS, POLISHED_BLACKSTONE_BRICKS, PRISMARINE_BRICKS, PRISMARINE_BRICK_STAIRS, SMOOTH_RED_SANDSTONE, RESIN_BRICKS, RESIN_BRICK_STAIRS, TUFF_BRICKS, TUFF_BRICK_STAIRS, DEEPSLATE_TILES, DEEPSLATE_TILE_STAIRS, DEEPSLATE_BRICKS, DEEPSLATE_BRICK_STAIRS, POLISHED_DEEPSLATE, POLISHED_DEEPSLATE_STAIRS, STONE_BRICKS, STONE_BRICK_STAIRS</li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-orange-300">Anvil Extras</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Anvils can split minecarts</li>
+          <li>Anvils can split boats</li>
+          <li>Anvil crushes blocks: <code>cobblestone → gravel</code>, <code>gravel → sand</code></li>
+        </ul>
+      </article>
+
+      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-pink-300">Dispenser Extras</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Can break blocks with: pickaxe, shovel, hoe, axe, shears</li>
+          <li>Can insert music discs into jukeboxes</li>
+          <li>Can interact with cauldrons</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
