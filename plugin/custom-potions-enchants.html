@@ -31,12 +31,15 @@
     <section class='mt-8'>
       <h2 class='text-2xl font-bold text-blue-300'>Potion Reference (Effects on Drink)</h2>
       <p class='text-gray-400 mt-2'>Each entry shows how it is made plus vanilla and custom effect payloads.</p>
+      <p id='dataset-summary' class='text-xs text-gray-500 mt-1'></p>
+      <div id='new-potions' class='mt-3 rounded-lg border border-blue-900/60 bg-blue-950/20 p-3'></div>
+      <div id='new-potion-cards' class='grid lg:grid-cols-2 gap-4 mt-4'></div>
       <div id='potions' class='grid lg:grid-cols-2 gap-4 mt-4'></div>
     </section>
 
     <section class='mt-10'>
       <h2 class='text-2xl font-bold text-purple-300'>Custom Effect Reference (What each effect does)</h2>
-      <p class='text-gray-400 mt-2'>Descriptions are from the provided plugin effect definitions.</p>
+      <p class='text-gray-400 mt-2'>Descriptions are from the latest plugin effect definitions you supplied.</p>
       <div id='effects' class='grid md:grid-cols-2 xl:grid-cols-3 gap-3 mt-4'></div>
     </section>
   </main>
@@ -169,14 +172,28 @@
         .join(' ');
     }
 
+    const datasetSummaryEl = document.getElementById('dataset-summary');
+    datasetSummaryEl.textContent = `Synced dataset: ${potions.length} potions and ${effects.length} custom effects.`;
+
+    const newPotionIds = ['magma_treader','spelunkers_grace','sentinels_heart','hunters_tempo','warden_tonic','stormcall_mix','beastmasters_brew'];
+    const newPotionsEl = document.getElementById('new-potions');
+    const newPotions = potions.filter((p) => newPotionIds.includes(p.id));
+    newPotionsEl.innerHTML = `
+      <h3 class="text-sm font-semibold text-blue-200">Newly Added Potions from latest definitions (${newPotions.length})</h3>
+      <p class="text-xs text-blue-100/80 mt-1">Full cards for these new additions are shown directly below.</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        ${newPotions.map((p) => `<a href="#potion-${p.id}" class="px-2 py-1 rounded text-xs bg-blue-900/60 text-blue-100 hover:bg-blue-800/70">${p.name}</a>`).join('')}
+      </div>
+    `;
+
     const potionNameById = Object.fromEntries(potions.map((p) => [p.id, p.name]));
     function friendlyPotionName(id) {
       return potionNameById[id] || `Potion of ${toTitleFromId(id)}`;
     }
 
-    const potionsEl = document.getElementById('potions');
-    potions.forEach((p) => {
+    function buildPotionCard(p, includeAnchorId = false) {
       const card = document.createElement('article');
+      if (includeAnchorId) card.id = `potion-${p.id}`;
       card.className = 'rounded-xl border border-gray-700 bg-white/5 p-4';
       card.innerHTML = `
         <h3 class="text-xl font-bold text-cyan-300">${p.name}</h3>
@@ -194,7 +211,15 @@
           <p class="mt-1"><strong class="text-yellow-300">Brewed from branches:</strong> ${p.branchBrews.map(friendlyPotionName).join(', ')}</p>
         </div>
       `;
-      potionsEl.appendChild(card);
+      return card;
+    }
+
+    const newPotionCardsEl = document.getElementById('new-potion-cards');
+    newPotions.forEach((p) => newPotionCardsEl.appendChild(buildPotionCard(p)));
+
+    const potionsEl = document.getElementById('potions');
+    potions.forEach((p) => {
+      potionsEl.appendChild(buildPotionCard(p, true));
     });
 
     const effectsEl = document.getElementById('effects');
