@@ -200,11 +200,27 @@ class Database {
   }
 
   normalizePlayer(player) {
+    const rawIsAlive = player.is_alive;
+    let normalizedIsAlive = 1;
+    if (typeof rawIsAlive === 'boolean') {
+      normalizedIsAlive = rawIsAlive ? 1 : 0;
+    } else if (typeof rawIsAlive === 'number') {
+      normalizedIsAlive = rawIsAlive > 0 ? 1 : 0;
+    } else if (typeof rawIsAlive === 'string') {
+      const lower = rawIsAlive.trim().toLowerCase();
+      if (lower === 'false' || lower === '0') {
+        normalizedIsAlive = 0;
+      } else if (lower === 'true' || lower === '1') {
+        normalizedIsAlive = 1;
+      }
+    }
+
     return {
       ...this.buildDefaultPlayer(player.uuid, player.username),
       ...player,
       username: player.username || player.nickname || 'Unknown Player',
       nickname: player.nickname || null,
+      is_alive: normalizedIsAlive,
       unlocked_titles: Array.isArray(player.unlocked_titles) ? player.unlocked_titles : [],
       unlocked_prefixes: Array.isArray(player.unlocked_prefixes) ? player.unlocked_prefixes : [],
       unlocked_auras: Array.isArray(player.unlocked_auras) ? player.unlocked_auras : [],
@@ -404,7 +420,7 @@ class Database {
     if (existing) {
       existing.username = username;
       existing.last_login = new Date().toISOString();
-      existing.is_alive = Number(existing.deaths || 0) > 0 ? 0 : 1;
+      existing.is_alive = 1;
       await this.persist();
       return existing.id;
     }
@@ -468,8 +484,15 @@ class Database {
     existing.equipped_kill_message = payload.equipped_kill_message ?? existing.equipped_kill_message;
     if (typeof payload.is_alive === 'boolean') {
       existing.is_alive = payload.is_alive ? 1 : 0;
-    } else if (payload.deaths !== undefined) {
-      existing.is_alive = Number(existing.deaths) > 0 ? 0 : 1;
+    } else if (typeof payload.is_alive === 'number') {
+      existing.is_alive = payload.is_alive > 0 ? 1 : 0;
+    } else if (typeof payload.is_alive === 'string') {
+      const normalizedIsAlive = payload.is_alive.trim().toLowerCase();
+      if (normalizedIsAlive === 'true' || normalizedIsAlive === '1') {
+        existing.is_alive = 1;
+      } else if (normalizedIsAlive === 'false' || normalizedIsAlive === '0') {
+        existing.is_alive = 0;
+      }
     }
 
     this.refreshDerivedStats();
