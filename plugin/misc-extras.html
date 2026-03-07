@@ -10,10 +10,10 @@
   <main class="max-w-6xl mx-auto px-6 py-12">
     <a href="/plugin/index.html" class="text-blue-400 hover:text-blue-300 text-sm">← Back to plugin wiki hub</a>
     <h1 class="text-4xl md:text-5xl font-black mt-4">Purpur <span class="text-blue-500">Misc Extras</span></h1>
-    <p class="text-gray-400 mt-4 max-w-4xl">Quick reference for currently enabled Purpur extras only. Disabled toggles are intentionally omitted.</p>
+    <p class="text-gray-400 mt-4 max-w-4xl">Quick reference for enabled quality-of-life systems. These settings are tuned to reinforce Hardcore gameplay, planning, and teamwork.</p>
 
     <section class="mt-10 grid md:grid-cols-2 gap-6">
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="nether-build-height" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-green-300">Nether Build Height Guard</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li><strong>Enabled:</strong> true</li>
@@ -22,7 +22,7 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="sleep-messages" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-cyan-300">Sleep Progress Chat Messages</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li><strong>Enabled:</strong> true</li>
@@ -31,7 +31,7 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="mob-block-qol" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-blue-300">Mob / Block QoL</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li>Snow golems drop pumpkins when sheared</li>
@@ -39,7 +39,7 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="gameplay-rules" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-yellow-300">Gameplay Rules</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li>Respawn anchors require charges</li>
@@ -49,7 +49,7 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5 md:col-span-2">
+      <article id="path-speed" class="rounded-xl border border-gray-700 p-6 bg-white/5 md:col-span-2">
         <h2 class="text-2xl font-bold text-purple-300">Run Faster on Path Blocks</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li><strong>Enabled:</strong> true</li>
@@ -59,7 +59,26 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="torch-phantom-control" class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-amber-300">Torch &amp; Phantom Control</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Holding a torch while traveling is used as the recommended anti-phantom safety behavior on this server.</li>
+          <li>Best practice: keep a hotbar torch and swap before long night rotations, scout runs, or roof patrols.</li>
+          <li>Supports Hardcore rule #1: survive first, optimize loot second.</li>
+        </ul>
+      </article>
+
+      <article id="simple-voice-chat" class="rounded-xl border border-gray-700 p-6 bg-white/5">
+        <h2 class="text-2xl font-bold text-indigo-300">Simple Voice Chat Integration</h2>
+        <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
+          <li>Server runs proximity voice support for faster callouts in raids, PvP, and boss events.</li>
+          <li>Players install the client mod to join voice channels in-game (Forge/Fabric/NeoForge supported upstream).</li>
+          <li>Start here: <a href="https://modrinth.com/plugin/simple-voice-chat" class="text-blue-400 hover:text-blue-300" target="_blank" rel="noreferrer">Simple Voice Chat plugin page</a>.</li>
+          <li>Client mod page: <a href="https://modrinth.com/mod/simple-voice-chat" class="text-blue-400 hover:text-blue-300" target="_blank" rel="noreferrer">Simple Voice Chat mod</a>.</li>
+        </ul>
+      </article>
+
+      <article id="anvil-extras" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-orange-300">Anvil Extras</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li>Anvils can split minecarts</li>
@@ -68,7 +87,7 @@
         </ul>
       </article>
 
-      <article class="rounded-xl border border-gray-700 p-6 bg-white/5">
+      <article id="dispenser-extras" class="rounded-xl border border-gray-700 p-6 bg-white/5">
         <h2 class="text-2xl font-bold text-pink-300">Dispenser Extras</h2>
         <ul class="text-gray-300 mt-3 space-y-1 list-disc list-inside">
           <li>Can break blocks with: pickaxe, shovel, hoe, axe, shears</li>
