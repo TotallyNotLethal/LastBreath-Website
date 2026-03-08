@@ -663,6 +663,7 @@
         let statsStream = null;
         let statsStreamReconnectTimer = null;
         let onlinePlayersList = [];
+        let hasAuthoritativeOnlineCount = false;
 
         const METRIC_LABELS = {
             playtime: "Playtime",
@@ -789,7 +790,11 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/stats`);
                 const result = await parseApiResponse(response, 'Stats');
-                if (result.success) updateLiveStats(result.data);
+                if (result.success) {
+                    updateLiveStats(result.data, {
+                        onlinePlayersSource: result?.source?.online_players
+                    });
+                }
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
                 updateLiveStats({ server_uptime: 99.9, online_players: 0 });
@@ -896,8 +901,20 @@
         }
 
 
-        function updateLiveStats(data) {
-            document.getElementById('online-count').textContent = data.online_players || 0;
+        function updateLiveStats(data, options = {}) {
+            const onlinePlayersSource = options?.onlinePlayersSource;
+            const hasSourceSignal = onlinePlayersSource === 'minecraft_java_query';
+            const hasMatchingOnlineRoster = Array.isArray(data?.players_online)
+                && Number.isFinite(Number(data?.online_players))
+                && Number(data.online_players) === data.players_online.length;
+
+            if (hasSourceSignal || hasMatchingOnlineRoster) {
+                hasAuthoritativeOnlineCount = true;
+            }
+
+            document.getElementById('online-count').textContent = hasAuthoritativeOnlineCount
+                ? Number(data?.online_players) || 0
+                : 'Loading...';
             document.getElementById('stat-uptime').textContent = `${data.server_uptime || 99.9}%`;
 
             onlinePlayersList = Array.isArray(data?.players_online)
@@ -914,6 +931,11 @@
         function renderOnlinePlayersList() {
             const listEl = document.getElementById('online-players-list');
             if (!listEl) return;
+
+            if (!hasAuthoritativeOnlineCount) {
+                listEl.innerHTML = '<li class="text-sm text-gray-400 px-2 py-2">Loading online players...</li>';
+                return;
+            }
 
             if (!onlinePlayersList.length) {
                 listEl.innerHTML = '<li class="text-sm text-gray-400 px-2 py-2">No players online right now.</li>';
@@ -963,7 +985,9 @@
                 try {
                     const payload = JSON.parse(event.data || '{}');
                     if (payload?.data) {
-                        updateLiveStats(payload.data);
+                        updateLiveStats(payload.data, {
+                            onlinePlayersSource: payload?.source?.online_players
+                        });
                     }
                 } catch (error) {
                     console.error('Failed to parse stats stream payload:', error);
