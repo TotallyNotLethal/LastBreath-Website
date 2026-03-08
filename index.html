@@ -94,10 +94,10 @@
         <div class="absolute inset-0 glass-panel"></div>
         <div class="container mx-auto px-6 py-4 relative">
             <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
+                <a href="#home" class="interactive-focus -m-2 rounded-lg px-2 py-1 flex items-center space-x-2 hover:bg-white/5 transition-colors" aria-label="Go to top of page">
                     <i data-lucide="skull" class="w-8 h-8 text-red-500 hardcore-heart"></i>
                     <span class="text-2xl font-bold tracking-wider">LAST <span class="text-green-500">BREATH</span></span>
-                </div>
+                </a>
                 
                 <div class="hidden md:flex space-x-8 font-semibold text-sm uppercase tracking-wide">
                     <a href="#home" class="hover:text-green-400 transition-colors">Home</a>
@@ -160,13 +160,19 @@
                     </button>
                 </div>
                 
-                <div class="glass-panel px-6 py-4 rounded-lg flex items-center space-x-3 border border-gray-700">
-                    <div class="flex -space-x-2" id="online-avatars">
-                        <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-xs font-bold animate-pulse">💀</div>
-                    </div>
-                    <div class="text-left">
-                        <p class="text-2xl font-bold text-white" id="online-count">Loading...</p>
-                        <p class="text-xs text-gray-400">Players Online</p>
+                <div class="relative">
+                    <button type="button" id="online-players-toggle" class="interactive-focus glass-panel px-6 py-4 rounded-lg flex items-center space-x-3 border border-gray-700 hover:border-green-500/60 transition-all text-left">
+                        <div class="flex -space-x-2" id="online-avatars">
+                            <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-xs font-bold animate-pulse">💀</div>
+                        </div>
+                        <div class="text-left">
+                            <p class="text-2xl font-bold text-white" id="online-count">Loading...</p>
+                            <p class="text-xs text-gray-400">Players Online</p>
+                        </div>
+                    </button>
+                    <div id="online-players-panel" class="hidden absolute z-30 top-full mt-2 right-0 w-72 max-w-[80vw] rounded-xl border border-gray-700 bg-black/95 backdrop-blur p-3 text-left shadow-2xl">
+                        <p class="text-xs uppercase tracking-wider text-gray-400 mb-2">Online Right Now</p>
+                        <ul id="online-players-list" class="space-y-1 max-h-64 overflow-y-auto scrollbar-hide"></ul>
                     </div>
                 </div>
             </div>
@@ -656,6 +662,8 @@
         let leaderboardSearchQuery = "";
         let statsStream = null;
         let statsStreamReconnectTimer = null;
+        let onlinePlayersList = [];
+
         const METRIC_LABELS = {
             playtime: "Playtime",
             mobs_killed: "Mobs Killed",
@@ -691,6 +699,8 @@
         mobileMenuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
 
         const playerModal = document.getElementById('player-modal');
+        const onlinePlayersToggle = document.getElementById('online-players-toggle');
+        const onlinePlayersPanel = document.getElementById('online-players-panel');
 
         function setModalState(modal, isOpen) {
             modal.classList.toggle('hidden', !isOpen);
@@ -841,6 +851,7 @@
                     allLeaderboardPlayers = rankedPlayers;
                     currentLeaderboardPage = 1;
                     renderLeaderboard(getFilteredLeaderboardPlayers());
+                    renderOnlinePlayersList();
                 }
             } catch (error) {
                 console.error('Failed to fetch leaderboard:', error);
@@ -888,8 +899,55 @@
         function updateLiveStats(data) {
             document.getElementById('online-count').textContent = data.online_players || 0;
             document.getElementById('stat-uptime').textContent = `${data.server_uptime || 99.9}%`;
+
+            onlinePlayersList = Array.isArray(data?.players_online)
+                ? data.players_online.filter((name) => typeof name === 'string' && name.trim())
+                : [];
+            renderOnlinePlayersList();
         }
 
+
+        function getPlayerByUsername(username) {
+            return allLeaderboardPlayers.find((player) => String(player?.username || '').toLowerCase() === String(username || '').toLowerCase()) || null;
+        }
+
+        function renderOnlinePlayersList() {
+            const listEl = document.getElementById('online-players-list');
+            if (!listEl) return;
+
+            if (!onlinePlayersList.length) {
+                listEl.innerHTML = '<li class="text-sm text-gray-400 px-2 py-2">No players online right now.</li>';
+                return;
+            }
+
+            listEl.innerHTML = onlinePlayersList.map((username) => {
+                const player = getPlayerByUsername(username);
+                const wikiHref = `/wiki/player-profile.html?username=${encodeURIComponent(username)}`;
+                const avatar = player?.avatar || `https://mc-heads.net/avatar/${encodeURIComponent(username)}/64`;
+
+                if (!player) {
+                    return `
+                        <li>
+                            <a href="${wikiHref}" class="interactive-focus flex items-center gap-2 px-2 py-2 rounded-md hover:bg-white/5 transition-colors text-sm text-gray-200">
+                                <img src="${avatar}" alt="${username} avatar" class="w-6 h-6 rounded border border-gray-700">
+                                <span class="truncate">${username}</span>
+                            </a>
+                        </li>
+                    `;
+                }
+
+                return `
+                    <li>
+                        <button type="button" class="interactive-focus online-player-btn w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-white/5 transition-colors text-sm text-gray-200 text-left" data-username="${encodeURIComponent(username)}">
+                            <img src="${avatar}" alt="${username} avatar" class="w-6 h-6 rounded border border-gray-700">
+                            <span class="truncate">${username}</span>
+                        </button>
+                    </li>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
 
         function connectStatsStream() {
             if (typeof EventSource === 'undefined') return;
@@ -1039,18 +1097,43 @@
                 if (player) openPlayerModal(player);
             }
 
+            const onlinePlayerBtn = event.target.closest('.online-player-btn');
+            if (onlinePlayerBtn) {
+                const username = decodeURIComponent(onlinePlayerBtn.dataset.username || '');
+                const selectedPlayer = getPlayerByUsername(username);
+                if (selectedPlayer) {
+                    openPlayerModal(selectedPlayer);
+                }
+                onlinePlayersPanel?.classList.add('hidden');
+            }
+
             if (event.target.id === 'player-modal-backdrop' || event.target.closest('#close-player-modal')) setModalState(playerModal, false);
+
+            if (onlinePlayersPanel && onlinePlayersToggle && !onlinePlayersPanel.classList.contains('hidden')) {
+                const clickedInsidePanel = onlinePlayersPanel.contains(event.target);
+                const clickedToggle = onlinePlayersToggle.contains(event.target);
+                if (!clickedInsidePanel && !clickedToggle) {
+                    onlinePlayersPanel.classList.add('hidden');
+                }
+            }
         });
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape') {
                 setModalState(playerModal, false);
+                onlinePlayersPanel?.classList.add('hidden');
             }
         });
 
         document.addEventListener('DOMContentLoaded', () => {
             const leaderboardSort = document.getElementById('leaderboard-sort');
             const leaderboardSearch = document.getElementById('leaderboard-search');
+
+            if (onlinePlayersToggle) {
+                onlinePlayersToggle.addEventListener('click', () => {
+                    onlinePlayersPanel?.classList.toggle('hidden');
+                });
+            }
             const leaderboardToggle = document.getElementById('leaderboard-toggle');
             const leaderboardPrev = document.getElementById('leaderboard-prev');
             const leaderboardNext = document.getElementById('leaderboard-next');
