@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Guide: Teams (/team)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#0f0f0f] text-gray-100">
+  <main class="max-w-4xl mx-auto px-6 py-12">
+    <a href="/plugin/index.html" class="text-blue-400 hover:text-blue-300 text-sm">← Back to plugin wiki hub</a>
+    <h1 class="text-4xl md:text-5xl font-black mt-4">Player Guide: Teams <span class="text-blue-500">(/team)</span></h1>
+    <p class="text-gray-300 mt-4">This guide explains <strong>everything players need</strong> to use the Team system in LastBreathHC, in plain language.</p>
+    <p class="text-yellow-300/90 mt-3">This is a player-focused guide (not admin setup).</p>
+
+    <section class="mt-10 space-y-6">
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">1) What teams do for you</h2>
+        <ul class="list-disc pl-6 mt-3 space-y-1 text-gray-200">
+          <li>Stay grouped with friends.</li>
+          <li>Talk in private team chat with <code>/t</code>.</li>
+          <li>Send emergency help pings with <code>/tping</code>.</li>
+          <li>Share a team waypoint with <code>/waypoint</code>.</li>
+          <li>Quickly manage your roster with <code>/team gui</code>.</li>
+          <li>Track dead teammates in the Team GUI (if they are dead/banned) and start a guidance trail to their death location.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">2) Quick start (30 seconds)</h2>
+        <ol class="list-decimal pl-6 mt-3 space-y-1 text-gray-200">
+          <li>Create a team: <code>/team create MyTeam</code></li>
+          <li>Have your friends join: <code>/team join MyTeam</code></li>
+          <li>If you want approvals first, lock the team: <code>/team lock</code></li>
+          <li>Open the Team menu any time: <code>/team</code> or <code>/team gui</code></li>
+        </ol>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">3) <code>/team</code> commands (player view)</h2>
+        <div class="mt-4 space-y-4 text-gray-200">
+          <p><strong><code>/team</code> or <code>/team gui</code></strong><br>Opens the Team Management GUI.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>If you are <strong>not on a team</strong>: shows all teams and lets you click to join/request.</li>
+            <li>If you <strong>are on a team</strong>: shows members, owner, join status, leave/disband button, and dead teammate tracking heads.</li>
+          </ul>
+
+          <p><strong><code>/team create &lt;name&gt;</code></strong><br>Creates a team and puts you in it immediately.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>Name cannot contain spaces.</li>
+            <li>Name must be 16 characters or less.</li>
+            <li>Name must not already exist.</li>
+          </ul>
+
+          <p><strong><code>/team join &lt;name&gt;</code></strong><br>Attempts to join a team.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li><strong>Joined instantly</strong> (team is open).</li>
+            <li><strong>Request sent</strong> (team is locked).</li>
+            <li><strong>Already pending</strong> (you already requested).</li>
+            <li><strong>Already member</strong> (you are already in that team).</li>
+          </ul>
+          <p>If you were already in another team, joining a new one moves you over automatically.</p>
+
+          <p><strong><code>/team leave</code></strong><br>Leaves your current team.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>If you are the owner and nobody remains: team is disbanded.</li>
+            <li>If members remain: ownership transfers to another member.</li>
+          </ul>
+
+          <p><strong><code>/team kick &lt;player&gt;</code></strong><br>Owner-only. Removes a member from your team.</p>
+          <ul class="list-disc pl-6 space-y-1">
+            <li>You cannot kick yourself.</li>
+            <li>Target must be in your team.</li>
+          </ul>
+
+          <p><strong><code>/team lock</code></strong><br>Owner-only. Team becomes <strong>request-only</strong>.</p>
+          <p>Players can still attempt <code>/team join</code>, but they must be approved.</p>
+
+          <p><strong><code>/team unlock</code></strong><br>Owner-only. Team becomes <strong>open join</strong> again.</p>
+          <p><strong><code>/team requests</code></strong><br>Owner-only. Shows all pending join requests.</p>
+          <p><strong><code>/team accept &lt;player&gt;</code></strong><br>Owner-only. Approves a pending request and adds that player.</p>
+          <p><strong><code>/team deny &lt;player&gt;</code></strong><br>Owner-only. Rejects a pending request.</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">4) What the Team GUI shows</h2>
+        <h3 class="text-xl font-semibold mt-4">If you are not in a team</h3>
+        <ul class="list-disc pl-6 mt-2 space-y-1 text-gray-200">
+          <li>You get a list of teams.</li>
+          <li>Each team card shows team name, member count, owner name, and join mode (Open or Locked).</li>
+          <li>Clicking an open team joins instantly.</li>
+          <li>Clicking a locked team sends a request.</li>
+        </ul>
+
+        <h3 class="text-xl font-semibold mt-5">If you are in a team</h3>
+        <ul class="list-disc pl-6 mt-2 space-y-1 text-gray-200">
+          <li>Member heads appear in the top area.</li>
+          <li>Owners can click non-owner members to kick them.</li>
+          <li>Bottom controls include Leave Team (members), Disband Team (owner), and team info card.</li>
+          <li>Dead teammate heads can appear in dedicated bottom slots; click one to start a personal guidance trail to their death spot.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">5) Related team commands you should use</h2>
+        <p class="text-gray-300 mt-2">These are not <code>/team</code> subcommands, but they are core team tools.</p>
+        <div class="mt-4 space-y-3 text-gray-200">
+          <p><strong><code>/t &lt;message&gt;</code> — Team chat</strong><br>Sends a private message to online members of your current team. If you are not in a team, the message does not send.</p>
+          <p><strong><code>/tping</code> — Emergency team ping</strong><br>Sends a help ping to online teammates with your name, world type (Overworld/Nether/The End), and approximate distance from each recipient. Default cooldown is 300 seconds (5 minutes).</p>
+          <p><strong><code>/waypoint</code></strong><br>Shows current team waypoint with world + direction + approximate distance.</p>
+          <p><strong><code>/waypoint set &lt;name&gt;</code></strong><br>Sets the team waypoint at your current location and broadcasts it to the team.</p>
+          <p><strong><code>/waypoint clear</code></strong><br>Removes the team waypoint and broadcasts that it was cleared.</p>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">6) Common mistakes and fixes</h2>
+        <ul class="list-disc pl-6 mt-3 space-y-2 text-gray-200">
+          <li><strong>"That team does not exist."</strong> — Check spelling/caps and run <code>/team gui</code> to browse teams.</li>
+          <li><strong>"Team names cannot contain spaces."</strong> — Use <code>MyTeam</code> or <code>My_Team</code> style names.</li>
+          <li><strong>"Team names must be 16 characters or fewer."</strong> — Shorten the name.</li>
+          <li><strong>"Only the team owner can..."</strong> — Ask your owner, or have ownership transferred (owner leaves and transfer happens automatically if members remain).</li>
+          <li><strong>"No pending join request for &lt;player&gt;."</strong> — The request was already handled, expired from data changes, or never existed.</li>
+          <li><strong>"Your team does not have a waypoint."</strong> — Set one with <code>/waypoint set &lt;name&gt;</code>.</li>
+        </ul>
+      </div>
+
+      <div class="rounded-xl border border-gray-700 bg-white/5 p-6">
+        <h2 class="text-2xl font-bold text-blue-400">7) Pro tips for players</h2>
+        <ul class="list-disc pl-6 mt-3 space-y-1 text-gray-200">
+          <li>Use <strong>open join</strong> for casual public squads.</li>
+          <li>Use <strong>locked join + accept/deny</strong> for trusted runs.</li>
+          <li>Use <code>/tping</code> only for real emergencies (it has cooldown for a reason).</li>
+          <li>Keep waypoint names clear: <code>Home</code>, <code>Vault</code>, <code>Boss Portal</code>, <code>Rescue Point</code>.</li>
+          <li>Use <code>/team gui</code> as your one-stop menu during fights and recovery.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
