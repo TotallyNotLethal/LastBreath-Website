@@ -850,7 +850,7 @@
                     survival_days: Math.floor(Number(player?.survival_time || 0) / (24 * 60)),
                     avatar: player?.avatar_url || `https://mc-heads.net/avatar/${encodeURIComponent(player?.username && player.username !== 'Unknown Player' ? player.username : player?.uuid || 'Steve')}/100`,
                     leaderboard_value: extractor(player),
-                    status: player?.is_alive ? 'Alive' : 'Dead'
+                    status: (player?.isBanned ?? player?.is_banned) ? 'Dead' : 'Alive'
                 }));
         }
 
@@ -1064,15 +1064,16 @@
 
             tbody.innerHTML = visiblePlayers.map((player, index) => {
                 const absoluteIndex = startIndex + index;
+                const isBanned = Boolean(player?.isBanned ?? player?.is_banned);
                 const rankClass = absoluteIndex === 0 ? 'rank-1' : absoluteIndex === 1 ? 'rank-2' : absoluteIndex === 2 ? 'rank-3' : 'text-gray-500';
                 const rankIcon = absoluteIndex === 0 ? '👑' : absoluteIndex === 1 ? '🥈' : absoluteIndex === 2 ? '🥉' : '';
-                const borderColor = absoluteIndex === 0 ? 'border-yellow-500' : absoluteIndex === 1 ? 'border-gray-400' : absoluteIndex === 2 ? 'border-orange-500' : player.is_alive ? 'border-green-500/30' : 'grayscale opacity-50';
+                const borderColor = absoluteIndex === 0 ? 'border-yellow-500' : absoluteIndex === 1 ? 'border-gray-400' : absoluteIndex === 2 ? 'border-orange-500' : !isBanned ? 'border-green-500/30' : 'grayscale opacity-50';
                 const statusClass = player.status === 'Alive' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
                 const metricLabel = METRIC_LABELS[activeMetric] || 'Playtime';
                 const metricValue = activeMetric === 'playtime'
                     ? `${player.survival_days || 0} days`
                     : (player[activeMetric] || player.leaderboard_value || 0).toLocaleString();
-                const nameClass = player.is_alive ? 'text-white' : 'text-gray-400 line-through';
+                const nameClass = isBanned ? 'text-gray-400 line-through' : 'text-white';
 
                 return `
                     <tr class="hover:bg-white/5 transition-colors">
@@ -1086,7 +1087,7 @@
                                 </div>
                             </button>
                         </td>
-                        <td class="px-6 py-4 font-mono ${player.is_alive ? 'text-green-400' : 'text-gray-500'}">${metricValue}</td>
+                        <td class="px-6 py-4 font-mono ${!isBanned ? 'text-green-400' : 'text-gray-500'}">${metricValue}</td>
                         <td class="px-6 py-4 font-mono text-gray-300">${metricLabel}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 ${statusClass} text-xs rounded-full font-semibold">${player.status}</span>
