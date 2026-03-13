@@ -125,6 +125,15 @@
             box-shadow: 0 0 18px rgba(250, 204, 21, 0.45);
         }
 
+        .stats-card {
+            min-height: 235px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
         @keyframes royal-shimmer {
             0% { left: -140%; }
             55% { left: 180%; }
@@ -245,24 +254,24 @@
     <section id="stats" class="py-20 relative">
         <div class="container mx-auto px-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="stats-container">
-                <div class="glass-panel p-6 rounded-xl text-center hover:border-green-500/50 transition-all group">
+                <div class="stats-card glass-panel p-6 rounded-xl text-center hover:border-green-500/50 transition-all group">
                     <i data-lucide="users" class="w-8 h-8 text-green-500 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
                     <p class="text-3xl font-bold text-white mb-1" id="stat-players">...</p>
                     <p class="text-sm text-gray-400">Total Players</p>
                 </div>
-                <div class="glass-panel p-6 rounded-xl text-center hover:border-red-500/50 transition-all group">
+                <div class="stats-card glass-panel p-6 rounded-xl text-center hover:border-red-500/50 transition-all group">
                     <i data-lucide="skull" class="w-8 h-8 text-red-500 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
                     <p class="text-3xl font-bold text-white mb-1" id="stat-deaths">...</p>
                     <p class="text-sm text-gray-400">Total Deaths</p>
                 </div>
-                <a id="top-leader-card" href="#leaderboard" class="interactive-focus glass-panel p-6 rounded-xl text-center transition-all group royal-leader-card hover:scale-[1.02] hover:border-yellow-400/80">
+                <a id="top-leader-card" href="#leaderboard" class="stats-card interactive-focus glass-panel p-6 rounded-xl text-center transition-all group royal-leader-card hover:scale-[1.02] hover:border-yellow-400/80">
                     <i data-lucide="crown" class="w-8 h-8 text-yellow-400 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
                     <img id="top-leader-avatar" src="https://mc-heads.net/avatar/Steve/96" alt="Leaderboard champion" class="royal-leader-avatar w-16 h-16 rounded-full border-2 border-yellow-400/80 mx-auto mb-2">
                     <p class="text-xs uppercase tracking-[0.2em] text-yellow-200/90">Overall #1</p>
                     <p class="text-2xl font-bold text-white mb-1" id="stat-top-leader-name">Loading...</p>
                     <p class="text-sm text-gray-300" id="stat-top-leader-subtitle">Tap to view profile</p>
                 </a>
-                <div class="glass-panel p-6 rounded-xl text-center hover:border-blue-500/50 transition-all group">
+                <div class="stats-card glass-panel p-6 rounded-xl text-center hover:border-blue-500/50 transition-all group">
                     <i data-lucide="clock" class="w-8 h-8 text-blue-500 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
                     <p class="text-3xl font-bold text-white mb-1" id="stat-uptime">...</p>
                     <p class="text-sm text-gray-400">Server Uptime</p>
