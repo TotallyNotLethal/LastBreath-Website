@@ -715,6 +715,20 @@
         let statsStreamReconnectTimer = null;
         let onlinePlayersList = [];
         let hasAuthoritativeOnlineCount = false;
+        const OVERALL_TRACKED_METRICS = [
+            'playtime',
+            'mobs_killed',
+            'player_kills',
+            'deaths',
+            'revives',
+            'blocks_mined',
+            'blocks_placed',
+            'rare_ores_mined',
+            'crops_harvested',
+            'fish_caught',
+            'asteroids_looted',
+            'kills'
+        ];
 
         const METRIC_LABELS = {
             playtime: "Playtime",
@@ -791,8 +805,8 @@
             avatar.src = player.avatar || `https://mc-heads.net/avatar/${encodeURIComponent(player.username || 'Steve')}/96`;
             avatar.alt = `${player.username || 'Unknown'} avatar`;
             name.textContent = player.username || 'Unknown';
-            const playtimeDays = Number(player.survival_days) || 0;
-            subtitle.textContent = `👑 ${playtimeDays.toLocaleString()} day${playtimeDays === 1 ? '' : 's'} survived`;
+            const firstPlaceFinishes = Number(player.first_place_finishes || 0);
+            subtitle.textContent = `View profile • ${firstPlaceFinishes} x #1 finishes`;
         }
 
         function setModalState(modal, isOpen) {
@@ -906,7 +920,8 @@
                 rare_ores_mined: (player) => Number(player?.rare_ores_mined || 0),
                 crops_harvested: (player) => Number(player?.crops_harvested || 0),
                 fish_caught: (player) => Number(player?.fish_caught || 0),
-                asteroids_looted: (player) => Number(player?.asteroid_loots || 0)
+                asteroids_looted: (player) => Number(player?.asteroid_loots || 0),
+                kills: (player) => Number(player?.kills || player?.mobs_killed || 0)
             };
             const extractor = metricExtractors[metric] || metricExtractors.playtime;
 
@@ -924,6 +939,54 @@
                     avatar: player?.avatar_url || `https://mc-heads.net/avatar/${encodeURIComponent(player?.username && player.username !== 'Unknown Player' ? player.username : player?.uuid || 'Steve')}/100`,
                     leaderboard_value: extractor(player),
                     status: player?.is_alive ? 'Alive' : 'Dead'
+                }));
+        }
+
+        function buildOverallRankedPlayers(players) {
+            const safePlayers = Array.isArray(players) ? players : [];
+            const maxPlacements = safePlayers.length;
+            const placementMap = new Map();
+
+            safePlayers.forEach((player) => {
+                const playerKey = player?.uuid || player?.username;
+                if (!playerKey) return;
+
+                placementMap.set(playerKey, {
+                    ...player,
+                    placeCounts: Array(maxPlacements).fill(0)
+                });
+            });
+
+            OVERALL_TRACKED_METRICS.forEach((metric) => {
+                const rankedByMetric = buildRankedPlayersFromRoster(safePlayers, metric);
+                rankedByMetric.forEach((player, index) => {
+                    const playerKey = player?.uuid || player?.username;
+                    const existing = placementMap.get(playerKey);
+                    if (!existing || index >= existing.placeCounts.length) return;
+                    existing.placeCounts[index] += 1;
+                });
+            });
+
+            return [...placementMap.values()]
+                .sort((a, b) => {
+                    for (let i = 0; i < maxPlacements; i += 1) {
+                        const placementDiff = (b.placeCounts[i] || 0) - (a.placeCounts[i] || 0);
+                        if (placementDiff !== 0) return placementDiff;
+                    }
+
+                    const playtimeDiff = Number(b?.time_alive_ticks || 0) - Number(a?.time_alive_ticks || 0);
+                    if (playtimeDiff !== 0) return playtimeDiff;
+
+                    return String(a?.username || '').localeCompare(String(b?.username || ''));
+                })
+                .map((player, index) => ({
+                    ...player,
+                    rank: index + 1,
+                    metric: 'overall',
+                    survival_days: Math.floor(Number(player?.survival_time || 0) / (24 * 60)),
+                    avatar: player?.avatar_url || `https://mc-heads.net/avatar/${encodeURIComponent(player?.username && player.username !== 'Unknown Player' ? player.username : player?.uuid || 'Steve')}/100`,
+                    status: player?.is_alive ? 'Alive' : 'Dead',
+                    first_place_finishes: player?.placeCounts?.[0] || 0
                 }));
         }
 
@@ -946,7 +1009,7 @@
                 if (result.success) {
                     const rawPlayers = result.data || [];
                     const rankedPlayers = buildRankedPlayersFromRoster(rawPlayers, activeMetric);
-                    const overallRankedPlayers = buildRankedPlayersFromRoster(rawPlayers, 'playtime');
+                    const overallRankedPlayers = buildOverallRankedPlayers(rawPlayers);
                     allLeaderboardPlayers = rankedPlayers;
                     currentLeaderboardPage = 1;
                     renderLeaderboard(getFilteredLeaderboardPlayers());
