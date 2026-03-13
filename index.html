@@ -134,6 +134,48 @@
             gap: 0.25rem;
         }
 
+        .announcement-banner {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(90deg, rgba(127, 29, 29, 0.95), rgba(239, 68, 68, 0.95), rgba(250, 204, 21, 0.9));
+            border-top: 1px solid rgba(248, 113, 113, 0.55);
+            border-bottom: 1px solid rgba(248, 113, 113, 0.55);
+            box-shadow: 0 0 28px rgba(248, 113, 113, 0.35);
+        }
+
+        .announcement-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                -45deg,
+                rgba(255, 255, 255, 0.06),
+                rgba(255, 255, 255, 0.06) 8px,
+                transparent 8px,
+                transparent 16px
+            );
+            pointer-events: none;
+        }
+
+        .announcement-track {
+            display: inline-flex;
+            min-width: 100%;
+            white-space: nowrap;
+            animation: marquee-scroll var(--banner-speed, 20s) linear infinite;
+            will-change: transform;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .announcement-track {
+                animation: none;
+            }
+        }
+
+        @keyframes marquee-scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
         @keyframes royal-shimmer {
             0% { left: -140%; }
             55% { left: 180%; }
@@ -180,6 +222,13 @@
             </div>
         </div>
     </nav>
+
+    <!-- Announcement Banner -->
+    <div id="announcement-banner" class="hidden fixed top-[72px] left-0 w-full z-40 announcement-banner" role="status" aria-live="polite">
+        <div class="relative px-0 py-2">
+            <div id="announcement-track" class="announcement-track text-black font-black uppercase tracking-wider text-sm md:text-base"></div>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section id="home" class="relative min-h-screen flex items-center justify-center overflow-x-hidden">
@@ -712,6 +761,15 @@
 
     <script>
         const API_BASE_URL = `${window.location.origin}/api`; // Production on lastbreath.net
+        const ANNOUNCEMENT_CONFIG = {
+            enabled: false,
+            items: [
+                '⚠️ Double XP Weekend starts Friday at 6PM EST!',
+                '☄️ New asteroid loot table is now live.',
+                '🏆 Vote daily to earn bonus revive shards.'
+            ],
+            speedSeconds: 20
+        };
         const PREVIEW_LIMIT = 5;
         const FULL_LEADERBOARD_PAGE_SIZE = 10;
         let currentPlayers = [];
@@ -776,6 +834,29 @@
         const playerModal = document.getElementById('player-modal');
         const onlinePlayersToggle = document.getElementById('online-players-toggle');
         const onlinePlayersPanel = document.getElementById('online-players-panel');
+
+        function setupAnnouncementBanner() {
+            const banner = document.getElementById('announcement-banner');
+            const track = document.getElementById('announcement-track');
+            if (!banner || !track) return;
+
+            const items = Array.isArray(ANNOUNCEMENT_CONFIG.items)
+                ? ANNOUNCEMENT_CONFIG.items.map((item) => String(item || '').trim()).filter(Boolean)
+                : [];
+
+            if (!ANNOUNCEMENT_CONFIG.enabled || !items.length) {
+                banner.classList.add('hidden');
+                return;
+            }
+
+            banner.classList.remove('hidden');
+            const speed = Number(ANNOUNCEMENT_CONFIG.speedSeconds) || 20;
+            track.style.setProperty('--banner-speed', `${Math.max(8, speed)}s`);
+
+            const separator = '<span class="mx-6 text-black/60">✦</span>';
+            const announcementMarkup = items.map((item) => `<span class="mx-4">${item}</span>`).join(separator);
+            track.innerHTML = `${announcementMarkup}${separator}${announcementMarkup}`;
+        }
 
         function buildPlayerProfileUrl(player) {
             const params = new URLSearchParams({
@@ -1306,6 +1387,7 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            setupAnnouncementBanner();
             const leaderboardSort = document.getElementById('leaderboard-sort');
             const leaderboardSearch = document.getElementById('leaderboard-search');
 
