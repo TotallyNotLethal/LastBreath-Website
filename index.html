@@ -100,6 +100,36 @@
             outline: 2px solid rgba(34, 197, 94, 0.8);
             outline-offset: 2px;
         }
+
+        .royal-leader-card {
+            position: relative;
+            overflow: hidden;
+            border-color: rgba(250, 204, 21, 0.35);
+            box-shadow: 0 0 28px rgba(250, 204, 21, 0.2);
+        }
+
+        .royal-leader-card::before {
+            content: '';
+            position: absolute;
+            top: -25%;
+            left: -140%;
+            width: 75%;
+            height: 160%;
+            background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.52), transparent);
+            transform: rotate(14deg);
+            animation: royal-shimmer 3.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        .royal-leader-avatar {
+            box-shadow: 0 0 18px rgba(250, 204, 21, 0.45);
+        }
+
+        @keyframes royal-shimmer {
+            0% { left: -140%; }
+            55% { left: 180%; }
+            100% { left: 180%; }
+        }
     </style>
 </head>
 <body class="text-gray-100 overflow-x-hidden">
@@ -225,11 +255,13 @@
                     <p class="text-3xl font-bold text-white mb-1" id="stat-deaths">...</p>
                     <p class="text-sm text-gray-400">Total Deaths</p>
                 </div>
-                <div class="glass-panel p-6 rounded-xl text-center hover:border-yellow-500/50 transition-all group">
-                    <i data-lucide="trophy" class="w-8 h-8 text-yellow-500 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
-                    <p class="text-3xl font-bold text-white mb-1" id="stat-winners">...</p>
-                    <p class="text-sm text-gray-400">Ender Dragon Slayers</p>
-                </div>
+                <a id="top-leader-card" href="#leaderboard" class="interactive-focus glass-panel p-6 rounded-xl text-center transition-all group royal-leader-card hover:scale-[1.02] hover:border-yellow-400/80">
+                    <i data-lucide="crown" class="w-8 h-8 text-yellow-400 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
+                    <img id="top-leader-avatar" src="https://mc-heads.net/avatar/Steve/96" alt="Leaderboard champion" class="royal-leader-avatar w-16 h-16 rounded-full border-2 border-yellow-400/80 mx-auto mb-2">
+                    <p class="text-xs uppercase tracking-[0.2em] text-yellow-200/90">Overall #1</p>
+                    <p class="text-2xl font-bold text-white mb-1" id="stat-top-leader-name">Loading...</p>
+                    <p class="text-sm text-gray-300" id="stat-top-leader-subtitle">Tap to view profile</p>
+                </a>
                 <div class="glass-panel p-6 rounded-xl text-center hover:border-blue-500/50 transition-all group">
                     <i data-lucide="clock" class="w-8 h-8 text-blue-500 mx-auto mb-3 group-hover:scale-110 transition-transform"></i>
                     <p class="text-3xl font-bold text-white mb-1" id="stat-uptime">...</p>
@@ -722,6 +754,47 @@
         const onlinePlayersToggle = document.getElementById('online-players-toggle');
         const onlinePlayersPanel = document.getElementById('online-players-panel');
 
+        function buildPlayerProfileUrl(player) {
+            const params = new URLSearchParams({
+                username: player?.username || '',
+                uuid: player?.uuid || '',
+                rank: String(player?.rank || ''),
+                survival_days: String(player?.survival_days || 0),
+                kills: String(player?.kills || 0),
+                status: player?.status || '',
+                join_date: player?.join_date || '2024',
+                avatar: player?.avatar || ''
+            });
+
+            return `/wiki/player-profile.html?${params.toString()}`;
+        }
+
+        function updateTopLeaderCard(player) {
+            const card = document.getElementById('top-leader-card');
+            const avatar = document.getElementById('top-leader-avatar');
+            const name = document.getElementById('stat-top-leader-name');
+            const subtitle = document.getElementById('stat-top-leader-subtitle');
+
+            if (!card || !avatar || !name || !subtitle) return;
+
+            if (!player) {
+                card.href = '#leaderboard';
+                avatar.src = 'https://mc-heads.net/avatar/Steve/96';
+                avatar.alt = 'Leaderboard champion';
+                name.textContent = 'No Leader Yet';
+                subtitle.textContent = 'Be the first legend';
+                return;
+            }
+
+            const profileUrl = buildPlayerProfileUrl(player);
+            card.href = profileUrl;
+            avatar.src = player.avatar || `https://mc-heads.net/avatar/${encodeURIComponent(player.username || 'Steve')}/96`;
+            avatar.alt = `${player.username || 'Unknown'} avatar`;
+            name.textContent = player.username || 'Unknown';
+            const playtimeDays = Number(player.survival_days) || 0;
+            subtitle.textContent = `👑 ${playtimeDays.toLocaleString()} day${playtimeDays === 1 ? '' : 's'} survived`;
+        }
+
         function setModalState(modal, isOpen) {
             modal.classList.toggle('hidden', !isOpen);
             document.body.classList.toggle('overflow-hidden', isOpen);
@@ -871,14 +944,18 @@
                 const response = await fetch(`${API_BASE_URL}/players`);
                 const result = await parseApiResponse(response, 'Players');
                 if (result.success) {
-                    const rankedPlayers = buildRankedPlayersFromRoster(result.data || [], activeMetric);
+                    const rawPlayers = result.data || [];
+                    const rankedPlayers = buildRankedPlayersFromRoster(rawPlayers, activeMetric);
+                    const overallRankedPlayers = buildRankedPlayersFromRoster(rawPlayers, 'playtime');
                     allLeaderboardPlayers = rankedPlayers;
                     currentLeaderboardPage = 1;
                     renderLeaderboard(getFilteredLeaderboardPlayers());
+                    updateTopLeaderCard(overallRankedPlayers[0] || null);
                     renderOnlinePlayersList();
                 }
             } catch (error) {
                 console.error('Failed to fetch leaderboard:', error);
+                updateTopLeaderCard(null);
                 if (!currentPlayers.length) {
                     document.getElementById('leaderboard-body').innerHTML = `
                         <tr><td colspan="5" class="px-6 py-8 text-center text-gray-500">Failed to load leaderboard. API may be offline.</td></tr>
@@ -902,21 +979,9 @@
             const fullRoster = Array.isArray(players) ? players : [];
             const totalPlayers = fullRoster.length;
             const totalDeaths = fullRoster.reduce((sum, player) => sum + (Number(player?.deaths) || 0), 0);
-            const dragonSlayers = fullRoster.reduce((sum, player) => {
-                if (Number(player?.ender_dragon_kills) > 0 || Number(player?.dragon_kills) > 0 || Number(player?.dragons_slain) > 0) {
-                    return sum + 1;
-                }
-
-                if (player?.dragon_slayer === true || player?.is_dragon_slayer === true) {
-                    return sum + 1;
-                }
-
-                return sum;
-            }, 0);
 
             animateValue('stat-players', 0, totalPlayers, 2000);
             animateValue('stat-deaths', 0, totalDeaths, 2000);
-            animateValue('stat-winners', 0, dragonSlayers, 2000);
         }
 
 
@@ -1090,7 +1155,7 @@
                         <td class="px-6 py-4 font-mono text-gray-300">${metricLabel}</td>
                         <td class="px-6 py-4">
                             <span class="px-2 py-1 ${statusClass} text-xs rounded-full font-semibold">${player.status}</span>
-                            <a href="/wiki/player-profile.html?username=${encodeURIComponent(player.username || '')}&uuid=${encodeURIComponent(player.uuid || '')}&rank=${encodeURIComponent(player.rank || '')}&survival_days=${encodeURIComponent(player.survival_days || 0)}&kills=${encodeURIComponent(player.kills || 0)}&status=${encodeURIComponent(player.status || '')}&join_date=${encodeURIComponent(player.join_date || '2024')}&avatar=${encodeURIComponent(player.avatar || '')}" class="block mt-2 text-xs text-purple-300 hover:text-purple-200">Wiki page ↗</a>
+                            <a href="${buildPlayerProfileUrl(player)}" class="block mt-2 text-xs text-purple-300 hover:text-purple-200">Wiki page ↗</a>
                         </td>
                     </tr>
                 `;
