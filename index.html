@@ -159,10 +159,16 @@
 
         .announcement-track {
             display: inline-flex;
-            min-width: 100%;
+            width: max-content;
             white-space: nowrap;
             animation: marquee-scroll var(--banner-speed, 20s) linear infinite;
             will-change: transform;
+        }
+
+        .announcement-group {
+            display: inline-flex;
+            align-items: center;
+            min-width: 100vw;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -853,7 +859,10 @@
 
             const separator = '<span class="mx-6 text-black/60">✦</span>';
             const announcementMarkup = items.map((item) => `<span class="mx-4">${item}</span>`).join(separator);
-            track.innerHTML = `${announcementMarkup}${separator}${announcementMarkup}`;
+            track.innerHTML = `
+                <div class="announcement-group">${announcementMarkup}</div>
+                <div class="announcement-group" aria-hidden="true">${announcementMarkup}</div>
+            `;
         }
 
         function buildPlayerProfileUrl(player) {
