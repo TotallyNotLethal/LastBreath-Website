@@ -113,7 +113,7 @@ const emitStatsEvent = async (reason = 'update') => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 25565)
+      queryJavaServerStatus('mc.lastbreath.net', 19139)
     ]);
 
     const payload = JSON.stringify({
