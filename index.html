@@ -187,6 +187,77 @@
             55% { left: 180%; }
             100% { left: 180%; }
         }
+
+        .holiday-effects-layer {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 45;
+        }
+
+        .holiday-effect-item {
+            position: absolute;
+            top: -3rem;
+            opacity: 0.85;
+            animation: holiday-fall linear forwards;
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+        }
+
+        @keyframes holiday-fall {
+            0% {
+                transform: translate3d(0, -5vh, 0) rotate(0deg);
+                opacity: 0;
+            }
+            10% { opacity: 0.85; }
+            100% {
+                transform: translate3d(var(--holiday-drift, 0px), 110vh, 0) rotate(var(--holiday-rotation, 180deg));
+                opacity: 0;
+            }
+        }
+
+        .holiday-egg {
+            position: absolute;
+            width: 18px;
+            height: 24px;
+            border-radius: 50% 50% 45% 45%;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+            cursor: pointer;
+            pointer-events: auto;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .holiday-egg:hover {
+            transform: translate(-50%, -50%) scale(1.15);
+        }
+
+        .holiday-egg.found {
+            opacity: 0.2;
+            transform: translate(-50%, -50%) scale(0.85);
+        }
+
+        .holiday-hop {
+            position: absolute;
+            bottom: 1rem;
+            left: -4rem;
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 12px rgba(248, 250, 252, 0.45));
+            animation: bunny-hop 14s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes bunny-hop {
+            0% { transform: translateX(-5vw) translateY(0); }
+            15% { transform: translateX(12vw) translateY(-18px); }
+            30% { transform: translateX(28vw) translateY(0); }
+            45% { transform: translateX(44vw) translateY(-14px); }
+            60% { transform: translateX(60vw) translateY(0); }
+            75% { transform: translateX(76vw) translateY(-16px); }
+            100% { transform: translateX(108vw) translateY(0); }
+        }
+
     </style>
 </head>
 <body class="text-gray-100 overflow-x-hidden">
@@ -236,15 +307,22 @@
         </div>
     </div>
 
+    <div id="holiday-effects-layer" class="holiday-effects-layer hidden" aria-hidden="true"></div>
+
     <!-- Hero Section -->
     <section id="home" class="relative min-h-screen flex items-center justify-center overflow-x-hidden">
         <div class="absolute inset-0 minecraft-pattern opacity-30"></div>
         <div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0f0f0f]"></div>
         
         <div class="container mx-auto px-6 relative z-10 text-center">
-            <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-panel mb-6 border border-red-500/30">
+            <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-panel mb-4 border border-red-500/30">
                 <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                 <span class="text-sm font-semibold text-red-400">HARDCORE + ASTEROID RESPAWNS</span>
+            </div>
+
+            <div id="holiday-status" class="hidden mx-auto w-fit items-center gap-2 px-4 py-2 rounded-full glass-panel mb-6 border border-emerald-400/40">
+                <span id="holiday-status-icon" class="text-base">🎉</span>
+                <span id="holiday-status-text" class="text-sm font-semibold text-emerald-300"></span>
             </div>
             
             <h1 class="text-6xl md:text-8xl font-black mb-6 tracking-tight">
@@ -776,6 +854,80 @@
             ],
             speedSeconds: 20
         };
+        const HOLIDAY_SCHEDULE = [
+            {
+                id: 'new_year',
+                displayName: 'New Year',
+                eventName: 'Midnight Meteor Relay',
+                objective: 'Hunt phantoms and collect gunpowder in the holiday zone.',
+                month: 1,
+                day: 1,
+                effects: { type: 'falling', symbol: '☄️', color: '#bae6fd' }
+            },
+            {
+                id: 'valentines',
+                displayName: "Valentine's Day",
+                eventName: "Cupid's Lost Letters",
+                objective: 'Collect roses and cocoa beans in the holiday zone.',
+                month: 2,
+                day: 14,
+                effects: { type: 'falling', symbol: '💌', color: '#f9a8d4' }
+            },
+            {
+                id: 'st_patricks',
+                displayName: "St. Patrick's Day",
+                eventName: 'Emerald Gremlin Hunt',
+                objective: 'Kill cave spiders and gather emeralds from the event zone.',
+                month: 3,
+                day: 17,
+                effects: { type: 'falling', symbol: '🍀', color: '#86efac' }
+            },
+            {
+                id: 'easter',
+                displayName: 'Easter',
+                eventName: 'Colossal Bunny Rampage',
+                objective: 'Defeat giant bunnies (rabbits) and gather eggs for the Spring Totem.',
+                dynamicDate: 'easterSunday',
+                effects: { type: 'easter', symbol: '🥚', color: '#f9a8d4' }
+            },
+            {
+                id: 'independence_day',
+                displayName: 'Independence Day',
+                eventName: 'Powder Keg Convoy',
+                objective: 'Collect TNT and gunpowder while defending the holiday zone.',
+                month: 7,
+                day: 4,
+                effects: { type: 'falling', symbol: '🎆', color: '#fca5a5' }
+            },
+            {
+                id: 'halloween',
+                displayName: 'Halloween',
+                eventName: 'Lanterns of the Hollow',
+                objective: 'Eliminate undead and carve pumpkins in the holiday zone.',
+                month: 10,
+                day: 31,
+                effects: { type: 'falling', symbol: '🎃', color: '#fdba74' }
+            },
+            {
+                id: 'thanksgiving',
+                displayName: 'Thanksgiving',
+                eventName: 'Harvest Guardian Feast',
+                objective: 'Gather harvest crops from the event area.',
+                dynamicDate: 'usThanksgiving',
+                effects: { type: 'falling', symbol: '🌾', color: '#fcd34d' }
+            },
+            {
+                id: 'christmas',
+                displayName: 'Christmas',
+                eventName: 'Snowman Salvage Operation',
+                objective: 'Recover snowman parts by collecting snow blocks and killing strays.',
+                month: 12,
+                day: 25,
+                effects: { type: 'falling', symbol: '❄️', color: '#bfdbfe' }
+            }
+        ];
+        const HOLIDAY_WINDOW_DAYS = 3;
+
         const PREVIEW_LIMIT = 5;
         const FULL_LEADERBOARD_PAGE_SIZE = 10;
         let currentPlayers = [];
@@ -1395,8 +1547,118 @@
             }
         });
 
+        function easterSunday(year) {
+            const a = year % 19;
+            const b = Math.floor(year / 100);
+            const c = year % 100;
+            const d = Math.floor(b / 4);
+            const e = b % 4;
+            const f = Math.floor((b + 8) / 25);
+            const g = Math.floor((b - f + 1) / 3);
+            const h = (19 * a + b - d - g + 15) % 30;
+            const i = Math.floor(c / 4);
+            const k = c % 4;
+            const l = (32 + 2 * e + 2 * i - h - k) % 7;
+            const m = Math.floor((a + 11 * h + 22 * l) / 451);
+            const month = Math.floor((h + l - 7 * m + 114) / 31);
+            const day = ((h + l - 7 * m + 114) % 31) + 1;
+            return new Date(Date.UTC(year, month - 1, day));
+        }
+
+        function usThanksgiving(year) {
+            const firstDay = new Date(Date.UTC(year, 10, 1));
+            const dayOfWeek = firstDay.getUTCDay();
+            const offsetToThursday = (4 - dayOfWeek + 7) % 7;
+            const day = 1 + offsetToThursday + (3 * 7);
+            return new Date(Date.UTC(year, 10, day));
+        }
+
+        function resolveHolidayDate(holiday, year) {
+            if (holiday.dynamicDate === 'easterSunday') return easterSunday(year);
+            if (holiday.dynamicDate === 'usThanksgiving') return usThanksgiving(year);
+            return new Date(Date.UTC(year, holiday.month - 1, holiday.day));
+        }
+
+        function findActiveHoliday(now = new Date()) {
+            const currentUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+            return HOLIDAY_SCHEDULE.find((holiday) => {
+                const holidayDate = resolveHolidayDate(holiday, currentUtc.getUTCFullYear());
+                const diffDays = Math.round((currentUtc - holidayDate) / 86400000);
+                return Math.abs(diffDays) <= HOLIDAY_WINDOW_DAYS;
+            });
+        }
+
+        function applyHolidayStatus(holiday) {
+            const status = document.getElementById('holiday-status');
+            const statusIcon = document.getElementById('holiday-status-icon');
+            const statusText = document.getElementById('holiday-status-text');
+            if (!status || !statusIcon || !statusText || !holiday) return;
+            status.classList.remove('hidden');
+            status.classList.add('inline-flex');
+            statusIcon.textContent = holiday.effects?.symbol || '🎉';
+            statusText.textContent = `${holiday.displayName} week active: ${holiday.eventName}`;
+            status.title = holiday.objective;
+        }
+
+        function spawnHolidayParticle(layer, holiday) {
+            const item = document.createElement('span');
+            item.className = 'holiday-effect-item';
+            item.textContent = holiday.effects?.symbol || '✨';
+            item.style.left = `${Math.random() * 100}vw`;
+            item.style.fontSize = `${0.85 + Math.random() * 1.1}rem`;
+            item.style.color = holiday.effects?.color || '#f5f5f5';
+            item.style.setProperty('--holiday-drift', `${(Math.random() - 0.5) * 260}px`);
+            item.style.setProperty('--holiday-rotation', `${(Math.random() - 0.5) * 720}deg`);
+            item.style.animationDuration = `${7 + Math.random() * 8}s`;
+            layer.appendChild(item);
+            setTimeout(() => item.remove(), 16000);
+        }
+
+        function addEasterEggs(layer) {
+            const colors = ['#fbcfe8', '#bfdbfe', '#fde68a', '#bbf7d0', '#ddd6fe'];
+            const placements = [[14, 80], [24, 34], [44, 67], [61, 28], [78, 76], [88, 40]];
+            placements.forEach((placement, index) => {
+                const egg = document.createElement('button');
+                egg.type = 'button';
+                egg.className = 'holiday-egg';
+                egg.style.left = `${placement[0]}vw`;
+                egg.style.top = `${placement[1]}vh`;
+                egg.style.background = `linear-gradient(180deg, ${colors[index % colors.length]}, rgba(255,255,255,0.2))`;
+                egg.setAttribute('aria-label', `Hidden egg ${index + 1}`);
+                egg.addEventListener('click', () => {
+                    egg.classList.toggle('found');
+                });
+                layer.appendChild(egg);
+            });
+
+            const bunny = document.createElement('div');
+            bunny.className = 'holiday-hop';
+            bunny.textContent = '🐇';
+            layer.appendChild(bunny);
+        }
+
+        function applyHolidayEffects() {
+            const activeHoliday = findActiveHoliday();
+            if (!activeHoliday) return;
+
+            applyHolidayStatus(activeHoliday);
+            const layer = document.getElementById('holiday-effects-layer');
+            if (!layer) return;
+            layer.classList.remove('hidden');
+
+            const type = activeHoliday.effects?.type;
+            if (type === 'easter') {
+                addEasterEggs(layer);
+                setInterval(() => spawnHolidayParticle(layer, activeHoliday), 1900);
+                return;
+            }
+
+            setInterval(() => spawnHolidayParticle(layer, activeHoliday), 800);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             setupAnnouncementBanner();
+            applyHolidayEffects();
             const leaderboardSort = document.getElementById('leaderboard-sort');
             const leaderboardSearch = document.getElementById('leaderboard-search');
 
