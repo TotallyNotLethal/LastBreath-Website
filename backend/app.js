@@ -244,7 +244,7 @@ app.get('/api/stats', async (req, res) => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 25565)
+      queryJavaServerStatus('mc.lastbreath.net', 19139)
     ]);
 
     res.json({
