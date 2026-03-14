@@ -261,7 +261,7 @@ app.get('/api/stats', async (req, res) => {
         minecraft_query: minecraft
       },
       source: {
-        online_players: minecraft.online ? 'minecraft_java_query' : 'session_tracking_fallback'
+        online_players: minecraft.online ? 'minecraft_java_query' : '0'
       }
     });
   } catch (error) {
