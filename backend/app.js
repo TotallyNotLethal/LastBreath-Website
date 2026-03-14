@@ -296,7 +296,7 @@ app.get(['/api/state', '/api/states'], async (req, res) => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 25565)
+      queryJavaServerStatus('mc.lastbreath.net', 19139)
     ]);
 
     res.json({
@@ -313,7 +313,7 @@ app.get(['/api/state', '/api/states'], async (req, res) => {
         minecraft_query: minecraft
       },
       source: {
-        online_players: minecraft.online ? 'minecraft_java_query' : 'session_tracking_fallback'
+        online_players: minecraft.online ? 'minecraft_java_query' : '0'
       }
     });
   } catch (error) {
@@ -670,7 +670,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/minecraft/status', async (req, res) => {
   try {
     const host = String(req.query.host || 'mc.lastbreath.net');
-    const port = Number(req.query.port || 25565);
+    const port = Number(req.query.port || 19139);
     const minecraft = await queryJavaServerStatus(host, port);
 
     return res.json({
