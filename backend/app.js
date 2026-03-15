@@ -113,7 +113,7 @@ const emitStatsEvent = async (reason = 'update') => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 19139)
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
     ]);
 
     const payload = JSON.stringify({
@@ -244,7 +244,7 @@ app.get('/api/stats', async (req, res) => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 19139)
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
     ]);
 
     res.json({
@@ -296,7 +296,7 @@ app.get(['/api/state', '/api/states'], async (req, res) => {
   try {
     const [stats, minecraft] = await Promise.all([
       db.getServerStats(),
-      queryJavaServerStatus('mc.lastbreath.net', 19139)
+      queryJavaServerStatus('mc.lastbreath.net', 25565)
     ]);
 
     res.json({
@@ -670,7 +670,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/minecraft/status', async (req, res) => {
   try {
     const host = String(req.query.host || 'mc.lastbreath.net');
-    const port = Number(req.query.port || 19139);
+    const port = Number(req.query.port || 25565);
     const minecraft = await queryJavaServerStatus(host, port);
 
     return res.json({
